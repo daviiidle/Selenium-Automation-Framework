@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
+<suite name="DemoWebShop Test Suite" parallel="none" thread-count="1">
+
+    <parameter name="browser" value="chrome"/>
+    <parameter name="headless" value="false"/>
+
+    <!-- Temporarily disable listeners to debug setup issues -->
+    <!--
+    <listeners>
+        <listener class-name="listeners.ExtentReportListener"/>
+        <listener class-name="listeners.ScreenshotListener"/>
+        <listener class-name="io.qameta.allure.testng.AllureTestNg"/>
+    </listeners>
+    -->
+
+    <test name="Smoke Tests" preserve-order="true">
+        <groups>
+            <run>
+                <include name="smoke"/>
+            </run>
+        </groups>
+        <classes>
+            <class name="tests.authentication.LoginTests">
+                <methods>
+                    <include name="testValidLogin"/>
+                </methods>
+            </class>
+            <class name="tests.authentication.RegistrationTests">
+                <methods>
+                    <include name="testValidUserRegistration"/>
+                </methods>
+            </class>
+        </classes>
+    </test>
+
+    <test name="Regression Tests" preserve-order="false">
+        <groups>
+            <run>
+                <include name="regression"/>
+            </run>
+        </groups>
+        <packages>
+            <package name="tests.*"/>
+        </packages>
+    </test>
+
+</suite>
