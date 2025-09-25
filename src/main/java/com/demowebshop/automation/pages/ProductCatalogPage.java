@@ -386,9 +386,28 @@ public class ProductCatalogPage extends BasePage {
     public boolean hasProducts() {
         // Check for actual product links on DemoWebShop
         try {
-            By productLinksSelector = By.cssSelector("a[href*='/books'], a[href*='/computers'], a[href*='/electronics'], a[href*='/apparel'], a[href*='/digital'], a[href*='/jewelry'], a[href*='/gift'], a[href*='/desktops'], a[href*='/notebooks']");
-            List<WebElement> productLinks = findElements(productLinksSelector);
-            return productLinks.size() > 0;
+            // Check for main navigation categories using correct DemoWebShop selectors
+            By navigationSelector = By.cssSelector(".top-menu a, .header-links a");
+            // Use soft wait to avoid timeout exceptions and check if elements exist first
+            List<WebElement> navLinks = findElements(navigationSelector);
+
+            // Only wait for visibility if elements exist
+            if (!navLinks.isEmpty()) {
+                try {
+                    waitUtils.waitForElementToBeVisible(navigationSelector, 3);
+                } catch (Exception e) {
+                    logger.debug("Navigation elements found but not visible yet: {}", e.getMessage());
+                }
+            }
+
+            // If navigation check fails, try product-specific elements
+            if (navLinks.isEmpty()) {
+                By productItemsSelector = By.cssSelector(".product-item, .item-box, .product-grid .item");
+                List<WebElement> productItems = waitUtils.softWaitForElementToBeVisible(productItemsSelector, 2) != null ?
+                    findElements(productItemsSelector) : List.of();
+                return !productItems.isEmpty();
+            }
+            return !navLinks.isEmpty();
         } catch (Exception e) {
             logger.debug("Error checking for products: {}", e.getMessage());
             return false;

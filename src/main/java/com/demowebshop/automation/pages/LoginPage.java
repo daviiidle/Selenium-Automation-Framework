@@ -174,11 +174,12 @@ public class LoginPage extends BasePage {
                 return false; // Successful login - redirected away
             }
 
-            // Try primary selector from authentication-selectors.json
+            // Try primary selector from authentication-selectors.json using soft wait
             try {
                 By errorSelector = SelectorUtils.getAuthSelector("authentication.login_page.validation.error_messages");
-                if (isElementDisplayed(errorSelector)) {
-                    String errorText = getText(errorSelector);
+                WebElement errorElement = waitUtils.softWaitForElementToBeVisible(errorSelector, 2);
+                if (errorElement != null) {
+                    String errorText = errorElement.getText();
                     if (errorText != null && !errorText.trim().isEmpty()) {
                         logger.debug("Found validation error with primary selector: {}", errorText);
                         return true;
@@ -209,8 +210,9 @@ public class LoginPage extends BasePage {
             for (String selector : fallbackSelectors) {
                 try {
                     By fallbackBy = By.cssSelector(selector);
-                    if (isElementDisplayed(fallbackBy)) {
-                        String errorText = getText(fallbackBy);
+                    WebElement errorElement = waitUtils.softWaitForElementToBeVisible(fallbackBy, 1);
+                    if (errorElement != null) {
+                        String errorText = errorElement.getText();
                         if (errorText != null && !errorText.trim().isEmpty()) {
                             logger.debug("Found validation error with fallback selector '{}': {}", selector, errorText);
                             return true;

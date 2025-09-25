@@ -343,4 +343,128 @@ public class WaitUtils {
             throw e;
         }
     }
+
+    /**
+     * Wait for any of the given elements to be visible (returns first found)
+     * @param locators Multiple locators to check
+     * @return First visible WebElement found
+     */
+    public WebElement waitForAnyElementToBeVisible(By... locators) {
+        return waitForAnyElementToBeVisible(defaultTimeout, locators);
+    }
+
+    /**
+     * Wait for any of the given elements to be visible with custom timeout
+     * @param timeoutInSeconds Custom timeout
+     * @param locators Multiple locators to check
+     * @return First visible WebElement found
+     */
+    public WebElement waitForAnyElementToBeVisible(int timeoutInSeconds, By... locators) {
+        try {
+            WebDriverWait customWait = new WebDriverWait(driver, Duration.ofSeconds(timeoutInSeconds));
+            return customWait.until(driver -> {
+                for (By locator : locators) {
+                    try {
+                        WebElement element = driver.findElement(locator);
+                        if (element.isDisplayed()) {
+                            logger.debug("Found visible element with locator: {}", locator);
+                            return element;
+                        }
+                    } catch (Exception ignored) {
+                        // Continue to next locator
+                    }
+                }
+                return null;
+            });
+        } catch (TimeoutException e) {
+            logger.error("None of the elements became visible within {} seconds: {}", timeoutInSeconds, java.util.Arrays.toString(locators));
+            throw e;
+        }
+    }
+
+    /**
+     * Wait for element to be either present or absent (flexible existence check)
+     * @param locator Element locator
+     * @param shouldExist true if element should exist, false if it should be absent
+     * @return true if condition met
+     */
+    public boolean waitForElementExistenceState(By locator, boolean shouldExist) {
+        return waitForElementExistenceState(locator, shouldExist, defaultTimeout);
+    }
+
+    /**
+     * Wait for element to be either present or absent with custom timeout
+     * @param locator Element locator
+     * @param shouldExist true if element should exist, false if it should be absent
+     * @param timeoutInSeconds Custom timeout
+     * @return true if condition met
+     */
+    public boolean waitForElementExistenceState(By locator, boolean shouldExist, int timeoutInSeconds) {
+        try {
+            WebDriverWait customWait = new WebDriverWait(driver, Duration.ofSeconds(timeoutInSeconds));
+            return customWait.until(driver -> {
+                try {
+                    List<WebElement> elements = driver.findElements(locator);
+                    boolean exists = !elements.isEmpty();
+                    return exists == shouldExist;
+                } catch (Exception e) {
+                    return !shouldExist; // If error finding element, consider it absent
+                }
+            });
+        } catch (TimeoutException e) {
+            String existenceState = shouldExist ? "present" : "absent";
+            logger.error("Element did not become {} within {} seconds: {}", existenceState, timeoutInSeconds, locator);
+            throw e;
+        }
+    }
+
+    /**
+     * Softly wait for element to be visible (returns null if not found, doesn't throw exception)
+     * @param locator Element locator
+     * @return WebElement if found and visible, null otherwise
+     */
+    public WebElement softWaitForElementToBeVisible(By locator) {
+        return softWaitForElementToBeVisible(locator, defaultTimeout);
+    }
+
+    /**
+     * Softly wait for element to be visible with custom timeout
+     * @param locator Element locator
+     * @param timeoutInSeconds Custom timeout
+     * @return WebElement if found and visible, null otherwise
+     */
+    public WebElement softWaitForElementToBeVisible(By locator, int timeoutInSeconds) {
+        try {
+            WebDriverWait customWait = new WebDriverWait(driver, Duration.ofSeconds(timeoutInSeconds));
+            return customWait.until(ExpectedConditions.visibilityOfElementLocated(locator));
+        } catch (TimeoutException e) {
+            logger.debug("Element not visible within {} seconds (soft wait): {}", timeoutInSeconds, locator);
+            return null;
+        }
+    }
+
+    /**
+     * Wait for page URL to change from current URL
+     * @param currentUrl The current URL to wait to change from
+     */
+    public void waitForUrlToChangeFrom(String currentUrl) {
+        waitForUrlToChangeFrom(currentUrl, defaultTimeout);
+    }
+
+    /**
+     * Wait for page URL to change from current URL with custom timeout
+     * @param currentUrl The current URL to wait to change from
+     * @param timeoutInSeconds Custom timeout
+     */
+    public void waitForUrlToChangeFrom(String currentUrl, int timeoutInSeconds) {
+        try {
+            WebDriverWait customWait = new WebDriverWait(driver, Duration.ofSeconds(timeoutInSeconds));
+            customWait.until(driver -> !driver.getCurrentUrl().equals(currentUrl));
+            logger.debug("URL changed from: {}", currentUrl);
+        } catch (TimeoutException e) {
+            logger.error("URL did not change from '{}' within {} seconds. Current URL: {}",
+                    currentUrl, timeoutInSeconds, driver.getCurrentUrl());
+            throw e;
+        }
+    }
 }

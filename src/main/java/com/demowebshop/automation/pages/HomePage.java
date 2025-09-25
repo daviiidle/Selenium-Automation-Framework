@@ -576,9 +576,10 @@ public class HomePage extends BasePage {
                         loginBy = By.cssSelector(selector);
                     }
 
-                    // Use shorter timeout to avoid long waits
-                    if (waitUtils.waitForElementToBeVisible(loginBy, 2) != null) {
-                        return waitUtils.waitForElementToBeVisible(loginBy, 2).isDisplayed();
+                    // Use soft wait to avoid exceptions for missing elements
+                    WebElement loginElement = waitUtils.softWaitForElementToBeVisible(loginBy, 2);
+                    if (loginElement != null && loginElement.isDisplayed()) {
+                        return true;
                     }
                 } catch (Exception ignored) {
                     // Continue to next selector
@@ -616,9 +617,10 @@ public class HomePage extends BasePage {
                         logoutBy = By.cssSelector(selector);
                     }
 
-                    // Use shorter timeout to avoid long waits
-                    if (waitUtils.waitForElementToBeVisible(logoutBy, 2) != null) {
-                        return waitUtils.waitForElementToBeVisible(logoutBy, 2).isDisplayed();
+                    // Use soft wait to avoid exceptions for missing elements
+                    WebElement logoutElement = waitUtils.softWaitForElementToBeVisible(logoutBy, 2);
+                    if (logoutElement != null && logoutElement.isDisplayed()) {
+                        return true;
                     }
                 } catch (Exception ignored) {
                     // Continue to next selector

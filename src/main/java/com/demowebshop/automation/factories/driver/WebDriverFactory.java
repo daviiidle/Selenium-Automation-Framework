@@ -148,8 +148,16 @@ public class WebDriverFactory {
         // Performance optimizations
         options.addArguments("--enable-automation");
         options.addArguments("--disable-blink-features=AutomationControlled");
+        options.addArguments("--disable-web-security");
+        options.addArguments("--disable-features=VizDisplayCompositor");
+        options.addArguments("--disable-logging");
+        options.addArguments("--disable-default-apps");
+        options.addArguments("--disable-background-timer-throttling");
+        options.addArguments("--disable-renderer-backgrounding");
+        options.addArguments("--disable-backgrounding-occluded-windows");
+        options.addArguments("--aggressive-cache-discard");
         options.setExperimentalOption("useAutomationExtension", false);
-        options.setExperimentalOption("excludeSwitches", new String[]{"enable-automation"});
+        options.setExperimentalOption("excludeSwitches", new String[]{"enable-automation", "enable-logging"});
 
         return options;
     }
@@ -165,9 +173,16 @@ public class WebDriverFactory {
             options.addArguments("--headless");
         }
 
-        // Common Firefox preferences
+        // Common Firefox preferences for speed
         options.addPreference("dom.webnotifications.enabled", false);
         options.addPreference("media.navigator.permission.disabled", true);
+        options.addPreference("dom.disable_open_during_load", false);
+        options.addPreference("dom.max_script_run_time", 0);
+        options.addPreference("dom.min_background_timeout_value", 4);
+        options.addPreference("network.http.pipelining", true);
+        options.addPreference("network.http.proxy.pipelining", true);
+        options.addPreference("network.http.pipelining.maxrequests", 10);
+        options.addPreference("nglayout.initialpaint.delay", 0);
 
         return options;
     }
@@ -183,12 +198,16 @@ public class WebDriverFactory {
             options.addArguments("--headless");
         }
 
-        // Common Edge arguments
+        // Common Edge arguments for speed
         options.addArguments("--no-sandbox");
         options.addArguments("--disable-dev-shm-usage");
         options.addArguments("--disable-gpu");
         options.addArguments("--disable-extensions");
         options.addArguments("--start-maximized");
+        options.addArguments("--disable-logging");
+        options.addArguments("--disable-default-apps");
+        options.addArguments("--disable-background-timer-throttling");
+        options.addArguments("--disable-renderer-backgrounding");
 
         return options;
     }

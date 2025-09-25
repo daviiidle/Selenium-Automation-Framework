@@ -284,7 +284,8 @@ public abstract class BasePage {
      */
     protected boolean isElementDisplayed(By locator) {
         try {
-            return waitUtils.waitForElementToBeVisible(locator, 5).isDisplayed();
+            WebElement element = waitUtils.softWaitForElementToBeVisible(locator, ConfigManager.getExplicitTimeout());
+            return element != null && element.isDisplayed();
         } catch (Exception e) {
             return false;
         }
@@ -297,7 +298,8 @@ public abstract class BasePage {
      */
     protected boolean isElementEnabled(By locator) {
         try {
-            return waitUtils.waitForElementToBeVisible(locator, 5).isEnabled();
+            WebElement element = waitUtils.softWaitForElementToBeVisible(locator, ConfigManager.getExplicitTimeout());
+            return element != null && element.isEnabled();
         } catch (Exception e) {
             return false;
         }
@@ -310,7 +312,8 @@ public abstract class BasePage {
      */
     protected boolean isElementSelected(By locator) {
         try {
-            return waitUtils.waitForElementToBeVisible(locator, 5).isSelected();
+            WebElement element = waitUtils.softWaitForElementToBeVisible(locator, ConfigManager.getExplicitTimeout());
+            return element != null && element.isSelected();
         } catch (Exception e) {
             return false;
         }

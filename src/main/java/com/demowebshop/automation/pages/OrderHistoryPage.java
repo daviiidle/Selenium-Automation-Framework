@@ -55,8 +55,10 @@ public class OrderHistoryPage extends BasePage {
      */
     public boolean hasOrders() {
         try {
-            By orderRowSelector = By.cssSelector(".order-item, .order-row, tbody tr");
-            return !findElements(orderRowSelector).isEmpty();
+            // Use more specific selectors for DemoWebShop order history
+            By orderRowSelector = By.cssSelector("table.order-list tr, .order-list-table tr, .data-table tbody tr");
+            WebElement orderTable = waitUtils.softWaitForElementToBeVisible(orderRowSelector, 3);
+            return orderTable != null && !findElements(orderRowSelector).isEmpty();
         } catch (Exception e) {
             return false;
         }
@@ -115,9 +117,20 @@ public class OrderHistoryPage extends BasePage {
      */
     public int getOrderCount() {
         try {
-            By orderRowSelector = By.cssSelector(".order-item, .order-row, tbody tr");
-            return findElements(orderRowSelector).size();
+            By orderRowSelector = By.cssSelector(".order-list .title, .order-overview-content, .section .order-item");
+            // Check if elements exist before waiting for visibility
+            List<WebElement> orderElements = findElements(orderRowSelector);
+            if (!orderElements.isEmpty()) {
+                try {
+                    // Only wait for visibility if elements are found
+                    waitUtils.softWaitForElementToBeVisible(orderRowSelector, 2);
+                } catch (Exception e) {
+                    logger.debug("Order elements found but not visible: {}", e.getMessage());
+                }
+            }
+            return orderElements.size();
         } catch (Exception e) {
+            logger.warn("Error getting order count: {}", e.getMessage());
             return 0;
         }
     }
@@ -275,7 +288,7 @@ public class OrderHistoryPage extends BasePage {
      */
     public OrderDetailsPage clickFirstOrder() {
         try {
-            By firstOrderSelector = By.cssSelector(".order-item:first-child a, .order-row:first-child a, tbody tr:first-child a");
+            By firstOrderSelector = By.cssSelector(".order-list .title a, .order-overview-content a, .section .order-item a");
             List<WebElement> orderLinks = findElements(firstOrderSelector);
             if (!orderLinks.isEmpty()) {
                 orderLinks.get(0).click();
@@ -294,8 +307,10 @@ public class OrderHistoryPage extends BasePage {
      */
     public boolean isEmptyOrderHistoryMessageDisplayed() {
         try {
-            By emptyMessageSelector = By.cssSelector(".no-data, .no-orders, .empty-list, .no-order-history");
-            return isElementDisplayed(emptyMessageSelector);
+            // Use soft wait to avoid long timeouts for potentially missing elements
+            By emptyMessageSelector = By.cssSelector(".no-data, .no-orders, .empty-list, .no-order-history, .info");
+            WebElement emptyMessage = waitUtils.softWaitForElementToBeVisible(emptyMessageSelector, 2);
+            return emptyMessage != null && emptyMessage.isDisplayed();
         } catch (Exception e) {
             return false;
         }

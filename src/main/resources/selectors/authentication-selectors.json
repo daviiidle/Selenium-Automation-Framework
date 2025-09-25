@@ -51,9 +51,10 @@
       "validation": {
         "error_messages": {
           "primary": ".validation-summary-errors",
-          "secondary": "[class*='validation-summary']",
-          "xpath": "//div[contains(@class, 'validation-summary-errors')]",
-          "stability": "Medium"
+          "secondary": ".field-validation-error, .message-error, .error-message, [class*='error']:not([class*='no-error'])",
+          "xpath": "//div[contains(@class, 'validation-summary-errors')] | //span[contains(@class, 'field-validation-error')] | //div[contains(@class, 'error')]",
+          "stability": "Low",
+          "note": "Error elements only appear conditionally based on validation state"
         },
         "field_errors": {
           "primary": ".field-validation-error",

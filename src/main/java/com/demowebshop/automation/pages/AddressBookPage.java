@@ -56,7 +56,7 @@ public class AddressBookPage extends BasePage {
     public boolean hasAddresses() {
         try {
             // Try multiple selector patterns for address items
-            By addressSelector = By.cssSelector(".address-item, .address, .address-box, .customer-address, li.address");
+            By addressSelector = By.cssSelector(".address-list .section, .customer-addresses .address-item, .address-info");
             if (!findElements(addressSelector).isEmpty()) {
                 return true;
             }
@@ -82,7 +82,7 @@ public class AddressBookPage extends BasePage {
     public int getAddressCount() {
         try {
             // Try multiple selector patterns for address items
-            By addressSelector = By.cssSelector(".address-item, .address, .address-box, .customer-address, li.address");
+            By addressSelector = By.cssSelector(".address-list .section, .customer-addresses .address-item, .address-info");
             return findElements(addressSelector).size();
         } catch (Exception e) {
             return 0;
@@ -227,7 +227,7 @@ public class AddressBookPage extends BasePage {
     public List<String> getAddressList() {
         try {
             // Try multiple selector patterns for address items
-            By addressSelector = By.cssSelector(".address-item, .address, .address-box, .customer-address, li.address");
+            By addressSelector = By.cssSelector(".address-list .section, .customer-addresses .address-item, .address-info");
             return findElements(addressSelector).stream()
                     .map(WebElement::getText)
                     .toList();
@@ -243,7 +243,7 @@ public class AddressBookPage extends BasePage {
     public String getFirstAddress() {
         try {
             // Try multiple selector patterns for address items
-            By addressSelector = By.cssSelector(".address-item, .address, .address-box, .customer-address, li.address");
+            By addressSelector = By.cssSelector(".address-list .section, .customer-addresses .address-item, .address-info");
             List<WebElement> addresses = findElements(addressSelector);
             if (!addresses.isEmpty()) {
                 return addresses.get(0).getText();

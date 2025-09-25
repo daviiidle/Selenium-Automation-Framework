@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
+<suite name="DemoWebShop Fast Test Suite" parallel="methods" thread-count="8" verbose="1"
+       data-provider-thread-count="5" time-out="15000">
+
+    <parameter name="browser" value="chrome"/>
+    <parameter name="headless" value="true"/>
+
+    <!-- Listeners disabled for maximum speed -->
+    <!--
+    <listeners>
+        <listener class-name="listeners.ExtentReportListener"/>
+        <listener class-name="listeners.ScreenshotListener"/>
+        <listener class-name="io.qameta.allure.testng.AllureTestNg"/>
+    </listeners>
+    -->
+
+    <test name="Ultra Fast Tests" preserve-order="false" parallel="methods" thread-count="8">
+        <packages>
+            <package name="tests.*"/>
+        </packages>
+    </test>
+
+</suite>
