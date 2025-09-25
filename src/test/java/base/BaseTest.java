@@ -1,13 +1,14 @@
 package base;
 
 import config.ConfigurationManager;
-import drivers.WebDriverFactory;
+import com.demowebshop.automation.factories.driver.WebDriverFactory;
+import com.demowebshop.automation.enums.BrowserType;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.openqa.selenium.WebDriver;
 import org.testng.annotations.*;
 import com.demowebshop.automation.pages.HomePage;
-import utils.ScreenshotUtils;
+import com.demowebshop.automation.utils.reporting.ScreenshotUtils;
 
 import java.lang.reflect.Method;
 
@@ -26,8 +27,8 @@ public abstract class BaseTest {
             String browserName = config.getBrowser();
             logger.info("Using browser: {} in headless mode: {}", browserName, config.isHeadless());
 
-            WebDriverFactory.setDriver(browserName);
-            driver = WebDriverFactory.getDriver();
+            BrowserType browserType = BrowserType.fromString(browserName);
+            driver = WebDriverFactory.createDriver(browserType);
 
             if (driver == null) {
                 throw new RuntimeException("WebDriver initialization failed - driver is null");
@@ -62,7 +63,7 @@ public abstract class BaseTest {
                 // Take screenshot on failure
                 if (!isTestPassed()) {
                     String screenshotName = this.getClass().getSimpleName() + "_" + method.getName() + "_failed";
-                    ScreenshotUtils.captureScreenshot(driver, screenshotName);
+                    ScreenshotUtils.takeScreenshot(driver, screenshotName);
                 }
             }
         } catch (Exception e) {
@@ -99,7 +100,7 @@ public abstract class BaseTest {
     }
 
     protected void takeScreenshot(String testName) {
-        ScreenshotUtils.captureScreenshot(driver, testName);
+        ScreenshotUtils.takeScreenshot(driver, testName);
     }
 
     // Method to check if test passed (to be overridden by test listeners)

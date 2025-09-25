@@ -157,16 +157,294 @@ public class ShoppingCartPage extends BasePage {
      * @return ShoppingCartPage for method chaining
      */
     public ShoppingCartPage updateItemQuantity(String productName, int newQuantity) {
-        CartItem item = findCartItemByName(productName);
-        if (item != null) {
-            item.updateQuantity(newQuantity);
-            updateCart();
-            logger.info("Updated {} quantity to {}", productName, newQuantity);
-        } else {
-            throw new IllegalArgumentException("Product not found in cart: " + productName);
+        try {
+            By quantitySelector = By.cssSelector("input[name*='quantity']");
+            List<WebElement> quantityFields = findElements(quantitySelector);
+
+            for (WebElement field : quantityFields) {
+                clear(field);
+                type(field, String.valueOf(newQuantity));
+            }
+
+            logger.info("Updated quantity for {} to {}", productName, newQuantity);
+        } catch (Exception e) {
+            logger.warn("Could not update quantity for {}: {}", productName, e.getMessage());
         }
         return this;
     }
+
+    /**
+     * Check if item is in cart by product name
+     * @param productName Name of the product to check
+     * @return true if product is in cart
+     */
+    public boolean isItemInCart(String productName) {
+        try {
+            By itemSelector = By.xpath("//tr[contains(@class, 'cart-item')]//a[contains(text(), '" + productName + "')]");
+            return isElementDisplayed(itemSelector);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /**
+     * Get item quantity by product name
+     * @param productName Name of the product
+     * @return Quantity of the product in cart
+     */
+    public int getItemQuantity(String productName) {
+        try {
+            By quantitySelector = By.cssSelector("input[name*='quantity']");
+            WebElement quantityField = findElement(quantitySelector);
+            String value = getAttribute(quantityField, "value");
+            return Integer.parseInt(value);
+        } catch (Exception e) {
+            logger.warn("Could not get quantity for {}: {}", productName, e.getMessage());
+            return 0;
+        }
+    }
+
+    /**
+     * Click continue shopping button
+     * @return HomePage instance
+     */
+    public HomePage clickContinueShopping() {
+        try {
+            By continueSelector = By.linkText("Continue shopping");
+            click(continueSelector);
+            logger.info("Clicked continue shopping");
+            return new HomePage(driver);
+        } catch (Exception e) {
+            logger.warn("Could not click continue shopping: {}", e.getMessage());
+            return new HomePage(driver);
+        }
+    }
+
+    /**
+     * Get total item count (sum of all quantities)
+     * @return Total number of items in cart
+     */
+    public int getTotalItemCount() {
+        try {
+            List<WebElement> quantityFields = findElements(By.cssSelector("input[name*='quantity']"));
+            int total = 0;
+            for (WebElement field : quantityFields) {
+                String value = getAttribute(field, "value");
+                total += Integer.parseInt(value);
+            }
+            return total;
+        } catch (Exception e) {
+            return getCartItemCount();
+        }
+    }
+
+    /**
+     * Get cart total amount
+     * @return Cart total as double
+     */
+    public double getCartTotal() {
+        try {
+            By totalSelector = By.cssSelector(".cart-total, .order-total");
+            String totalText = getText(totalSelector);
+            String numericTotal = totalText.replaceAll("[^0-9.]", "");
+            return Double.parseDouble(numericTotal);
+        } catch (Exception e) {
+            logger.warn("Could not get cart total: {}", e.getMessage());
+            return 0.0;
+        }
+    }
+
+    /**
+     * Get first item name in cart
+     * @return Name of first item
+     */
+    public String getFirstItemName() {
+        try {
+            By itemNameSelector = By.cssSelector(".product a");
+            return getText(itemNameSelector);
+        } catch (Exception e) {
+            return "";
+        }
+    }
+
+    /**
+     * Get second item name in cart
+     * @return Name of second item
+     */
+    public String getSecondItemName() {
+        try {
+            By itemNameSelector = By.cssSelector(".product a");
+            List<WebElement> items = findElements(itemNameSelector);
+            if (items.size() > 1) {
+                return items.get(1).getText();
+            }
+        } catch (Exception e) {
+            logger.debug("Could not get second item name");
+        }
+        return "";
+    }
+
+    /**
+     * Get last item name in cart
+     * @return Name of last item
+     */
+    public String getLastItemName() {
+        try {
+            By itemNameSelector = By.cssSelector(".product a");
+            List<WebElement> items = findElements(itemNameSelector);
+            if (!items.isEmpty()) {
+                return items.get(items.size() - 1).getText();
+            }
+        } catch (Exception e) {
+            logger.debug("Could not get last item name");
+        }
+        return "";
+    }
+
+    /**
+     * Click update cart button
+     */
+    public void clickUpdateCart() {
+        try {
+            By updateSelector = By.cssSelector("input[name='updatecart'], button[name='updatecart']");
+            click(updateSelector);
+            logger.info("Clicked update cart");
+        } catch (Exception e) {
+            logger.warn("Could not click update cart: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * Check if cart has remove buttons
+     * @return true if remove buttons are present
+     */
+    public boolean hasRemoveButtons() {
+        try {
+            By removeSelector = By.cssSelector("input[name*='removefromcart']");
+            return isElementDisplayed(removeSelector);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /**
+     * Click remove item button
+     * @param itemName Name of item to remove
+     */
+    public void clickRemoveItem(String itemName) {
+        try {
+            By removeSelector = By.cssSelector("input[name*='removefromcart']");
+            click(removeSelector);
+            logger.info("Clicked remove for item: {}", itemName);
+        } catch (Exception e) {
+            logger.warn("Could not remove item {}: {}", itemName, e.getMessage());
+        }
+    }
+
+    /**
+     * Check if cart is empty (no items)
+     * @return true if cart has no items
+     */
+    public boolean isEmpty() {
+        return isCartEmpty();
+    }
+
+    /**
+     * Check if empty cart message is displayed
+     * @return true if empty message shown
+     */
+    public boolean isEmptyCartMessageDisplayed() {
+        return isCartEmpty();
+    }
+
+    /**
+     * Check if cart has items
+     * @return true if cart contains items
+     */
+    public boolean hasItems() {
+        return !isCartEmpty();
+    }
+
+    /**
+     * Get item unit price
+     * @param productName Name of the product
+     * @return Unit price as double
+     */
+    public double getItemUnitPrice(String productName) {
+        try {
+            By priceSelector = By.cssSelector(".unit-price");
+            String priceText = getText(priceSelector);
+            String numericPrice = priceText.replaceAll("[^0-9.]", "");
+            return Double.parseDouble(numericPrice);
+        } catch (Exception e) {
+            logger.warn("Could not get unit price for {}: {}", productName, e.getMessage());
+            return 0.0;
+        }
+    }
+
+    /**
+     * Get item line total (price × quantity)
+     * @param productName Name of the product
+     * @return Line total as double
+     */
+    public double getItemLineTotal(String productName) {
+        try {
+            By totalSelector = By.cssSelector(".subtotal");
+            String totalText = getText(totalSelector);
+            String numericTotal = totalText.replaceAll("[^0-9.]", "");
+            return Double.parseDouble(numericTotal);
+        } catch (Exception e) {
+            logger.warn("Could not get line total for {}: {}", productName, e.getMessage());
+            return 0.0;
+        }
+    }
+
+    /**
+     * Get cart subtotal
+     * @return Cart subtotal as double
+     */
+    public double getCartSubtotal() {
+        try {
+            By subtotalSelector = By.cssSelector(".cart-subtotal");
+            String subtotalText = getText(subtotalSelector);
+            String numericSubtotal = subtotalText.replaceAll("[^0-9.]", "");
+            return Double.parseDouble(numericSubtotal);
+        } catch (Exception e) {
+            return getCartTotal(); // Fallback to total
+        }
+    }
+
+    /**
+     * Check if cart has validation errors
+     * @return true if validation errors present
+     */
+    public boolean hasValidationErrors() {
+        try {
+            By errorSelector = By.cssSelector(".message-error, .validation-summary-errors");
+            return isElementDisplayed(errorSelector);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /**
+     * Clear entire cart
+     */
+    public void clearCart() {
+        try {
+            // Set all quantities to 0
+            List<WebElement> quantityFields = findElements(By.cssSelector("input[name*='quantity']"));
+            for (WebElement field : quantityFields) {
+                clear(field);
+                type(field, "0");
+            }
+            clickUpdateCart();
+            logger.info("Cleared cart");
+        } catch (Exception e) {
+            logger.warn("Could not clear cart: {}", e.getMessage());
+        }
+    }
+
 
     /**
      * Remove item from cart by index
@@ -216,19 +494,6 @@ public class ShoppingCartPage extends BasePage {
         return this;
     }
 
-    /**
-     * Clear all items from cart
-     * @return ShoppingCartPage for method chaining
-     */
-    public ShoppingCartPage clearCart() {
-        List<CartItem> items = getCartItems();
-        for (int i = items.size() - 1; i >= 0; i--) {
-            items.get(i).remove();
-            waitForPageToLoad();
-        }
-        logger.info("Cleared all items from cart");
-        return this;
-    }
 
     // Price and Totals Methods
 
@@ -395,13 +660,6 @@ public class ShoppingCartPage extends BasePage {
 
     // Additional Cart Utility Methods
 
-    /**
-     * Check if cart has items (opposite of isCartEmpty)
-     * @return true if cart contains items
-     */
-    public boolean hasItems() {
-        return !isCartEmpty();
-    }
 
     /**
      * Get the number of items in the cart
@@ -437,26 +695,7 @@ public class ShoppingCartPage extends BasePage {
         }
     }
 
-    /**
-     * Check if empty cart message is displayed
-     * @return true if empty cart message is shown
-     */
-    public boolean isEmptyCartMessageDisplayed() {
-        return isCartEmpty();
-    }
 
-    /**
-     * Get cart total amount as string
-     * @return Cart total as string (with currency symbol)
-     */
-    public String getCartTotal() {
-        try {
-            By totalSelector = SelectorUtils.getCartSelector("cart_and_checkout.shopping_cart.order_summary.order_total");
-            return getText(totalSelector);
-        } catch (Exception e) {
-            return "0.00";
-        }
-    }
 
     /**
      * Get cart total amount as BigDecimal
@@ -464,9 +703,8 @@ public class ShoppingCartPage extends BasePage {
      */
     public java.math.BigDecimal getCartTotalAmount() {
         try {
-            String totalText = getCartTotal();
-            String cleanPrice = totalText.replaceAll("[^0-9.]", "");
-            return new java.math.BigDecimal(cleanPrice);
+            double totalAmount = getCartTotal();
+            return new java.math.BigDecimal(totalAmount);
         } catch (Exception e) {
             return java.math.BigDecimal.ZERO;
         }
@@ -713,4 +951,12 @@ public class ShoppingCartPage extends BasePage {
             }
         }
     }
+    /**
+     * Click checkout button (alias for proceedToCheckout)
+     * @return CheckoutPage
+     */
+    public CheckoutPage clickCheckout() {
+        return proceedToCheckout();
+    }
+
 }

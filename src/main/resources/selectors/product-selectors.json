@@ -18,10 +18,11 @@
           }
         },
         "sort_dropdown": {
-          "primary": "#products-orderby",
-          "secondary": "select[name='orderby']",
-          "xpath": "//select[@id='products-orderby' or @name='orderby']",
-          "stability": "High"
+          "primary": "select[name='orderby']",
+          "secondary": ".sorting-dropdown, select",
+          "xpath": "//select[@name='orderby']",
+          "stability": "Medium",
+          "note": "DemoWebShop may not have sorting dropdown on all category pages"
         },
         "page_size": {
           "primary": "#products-pagesize",
@@ -54,10 +55,11 @@
       },
       "product_grid": {
         "container": {
-          "primary": ".product-grid",
-          "secondary": "[class*='product-grid']",
-          "xpath": "//div[contains(@class, 'product-grid')]",
-          "stability": "High"
+          "primary": ".product-list, .item-list",
+          "secondary": "body",
+          "xpath": "//body",
+          "stability": "High",
+          "note": "DemoWebShop uses simple layout without explicit product grid container"
         },
         "product_item": {
           "primary": ".item-box",

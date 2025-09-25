@@ -103,4 +103,33 @@ public class OrderCompletePage extends BasePage {
     public String getPageUrlPattern() {
         return PAGE_URL_PATTERN;
     }
+
+    /**
+     * Check if view order link is displayed
+     * @return true if view order link is visible
+     */
+    public boolean isViewOrderLinkDisplayed() {
+        try {
+            By viewOrderSelector = By.cssSelector("a[href*='/customer/orders'], .view-order");
+            return isElementDisplayed(viewOrderSelector);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /**
+     * Click view order link
+     * @return OrderDetailsPage
+     */
+    public OrderDetailsPage clickViewOrder() {
+        try {
+            By viewOrderSelector = By.cssSelector("a[href*='/customer/orders'], .view-order");
+            click(viewOrderSelector);
+            logger.info("Clicked view order link");
+            return new OrderDetailsPage(driver);
+        } catch (Exception e) {
+            logger.warn("Could not click view order: {}", e.getMessage());
+            return new OrderDetailsPage(driver);
+        }
+    }
 }

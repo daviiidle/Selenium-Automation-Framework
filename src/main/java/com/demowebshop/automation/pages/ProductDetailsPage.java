@@ -99,6 +99,80 @@ public class ProductDetailsPage extends BasePage {
     }
 
     /**
+     * Get product price as double value for calculations
+     * @return Product price as double
+     */
+    public double getProductPriceAsDouble() {
+        try {
+            String priceText = getProductPrice();
+            // Remove currency symbols and extract numeric value
+            String numericPrice = priceText.replaceAll("[^0-9.]", "");
+            return Double.parseDouble(numericPrice);
+        } catch (Exception e) {
+            logger.warn("Could not parse product price as double: {}", e.getMessage());
+            return 0.0;
+        }
+    }
+
+    /**
+     * Select quantity for product
+     * @param quantity Number of items to select
+     */
+    public void selectQuantity(int quantity) {
+        try {
+            By quantitySelector = SelectorUtils.getProductSelector("product_pages.product_detail.add_to_cart.quantity");
+            WebElement quantityField = findElement(quantitySelector);
+            clear(quantityField);
+            type(quantityField, String.valueOf(quantity));
+            logger.info("Selected quantity: {}", quantity);
+        } catch (Exception e) {
+            logger.warn("Could not set quantity: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * Click add to cart button
+     */
+    public void clickAddToCart() {
+        try {
+            By addToCartSelector = SelectorUtils.getProductSelector("product_pages.product_detail.add_to_cart.button");
+            click(addToCartSelector);
+            logger.info("Clicked add to cart button");
+        } catch (Exception e) {
+            logger.warn("Could not click add to cart: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * Click home link to return to homepage
+     * @return HomePage instance
+     */
+    public HomePage clickHomeLink() {
+        try {
+            By homeSelector = SelectorUtils.getHomepageSelector("homepage.header.home_link");
+            click(homeSelector);
+            logger.info("Clicked home link");
+            return new HomePage(driver);
+        } catch (Exception e) {
+            logger.warn("Could not click home link: {}", e.getMessage());
+            return new HomePage(driver);
+        }
+    }
+
+    /**
+     * Check if page has error message
+     * @return true if error message is displayed
+     */
+    public boolean hasErrorMessage() {
+        try {
+            By errorSelector = By.cssSelector(".message-error, .validation-summary-errors, .error");
+            return isElementDisplayed(errorSelector);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /**
      * Check if product is on sale (has old price)
      * @return true if product has discounted price
      */

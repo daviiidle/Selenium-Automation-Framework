@@ -164,6 +164,37 @@ mvn allure:serve
 - **toList() Method**: All instances fixed for Java 21 compatibility
 - **Unused Imports**: Cleaned up ProductDataFactory and unused variables
 
+## 🚨 CRITICAL DUPLICATE PREVENTION PROTOCOL
+
+### **MANDATORY CHECKS BEFORE ANY CODE CREATION**
+⚠️ **ALWAYS VERIFY EXISTING FILES BEFORE CREATING NEW ONES** ⚠️
+
+**PROTOCOL**:
+1. **SEARCH FIRST**: Use `Glob` or `Grep` tools to check if class/file already exists
+2. **VERIFY LOCATION**: Ensure no duplicate files in different directories
+3. **CHECK IMPORTS**: Verify existing files don't already import similar classes
+4. **EDIT OVER CREATE**: Always prefer editing existing files over creating new ones
+
+### **DUPLICATE DETECTION COMMANDS**
+```bash
+# Check for existing class before creation
+find src -name "ClassName.java" -type f
+
+# Search for class definitions
+grep -r "class ClassName" src/
+
+# Verify no duplicates exist
+find src -name "*.java" | sort | uniq -d
+```
+
+### **MANDATORY VERIFICATION STEPS**
+- [ ] Run `find src -name "*.java" | sort | uniq -d` before any commits
+- [ ] Check compilation with `mvn clean compile` after any changes
+- [ ] Never create files without checking existing codebase first
+- [ ] Use `Read` tool to examine existing files before modifications
+
+**VIOLATION CONSEQUENCES**: Duplicate files waste resources and break compilation. This protocol MUST be followed.
+
 ---
 
 ## 🏆 FRAMEWORK ACHIEVEMENTS

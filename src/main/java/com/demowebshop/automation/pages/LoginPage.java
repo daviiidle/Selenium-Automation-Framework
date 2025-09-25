@@ -167,9 +167,87 @@ public class LoginPage extends BasePage {
      */
     public boolean hasValidationErrors() {
         try {
-            By errorSelector = SelectorUtils.getAuthSelector("authentication.login_page.validation.error_messages");
-            return isElementDisplayed(errorSelector);
+            // DemoWebShop shows validation errors in different ways - check all possible indicators
+
+            // Check if we're still on login page after submit (failed login stays on same page)
+            if (!getCurrentUrl().contains("/login")) {
+                return false; // Successful login - redirected away
+            }
+
+            // Try primary selector from authentication-selectors.json
+            try {
+                By errorSelector = SelectorUtils.getAuthSelector("authentication.login_page.validation.error_messages");
+                if (isElementDisplayed(errorSelector)) {
+                    String errorText = getText(errorSelector);
+                    if (errorText != null && !errorText.trim().isEmpty()) {
+                        logger.debug("Found validation error with primary selector: {}", errorText);
+                        return true;
+                    }
+                }
+            } catch (Exception ignored) {
+                // Continue with fallback approaches
+            }
+
+            // Check for common validation error patterns
+            String[] fallbackSelectors = {
+                ".validation-summary-errors",
+                ".validation-errors",
+                ".field-validation-error",
+                ".error-message",
+                ".login-error",
+                ".message-error",
+                ".error",
+                "[class*='error']:not([class*='no-error'])",
+                "[class*='validation']:not([class*='valid'])",
+                ".alert-danger",
+                ".alert-error",
+                "div[style*='color: red']",
+                "span[style*='color: red']",
+                ".text-danger"
+            };
+
+            for (String selector : fallbackSelectors) {
+                try {
+                    By fallbackBy = By.cssSelector(selector);
+                    if (isElementDisplayed(fallbackBy)) {
+                        String errorText = getText(fallbackBy);
+                        if (errorText != null && !errorText.trim().isEmpty()) {
+                            logger.debug("Found validation error with fallback selector '{}': {}", selector, errorText);
+                            return true;
+                        }
+                    }
+                } catch (Exception ignored) {
+                    // Continue to next selector
+                }
+            }
+
+            // Check page source for error indicators (last resort)
+            try {
+                String pageSource = driver.getPageSource().toLowerCase();
+                String[] errorIndicators = {
+                    "login was unsuccessful",
+                    "invalid email",
+                    "invalid password",
+                    "authentication failed",
+                    "login failed",
+                    "incorrect email or password",
+                    "validation error",
+                    "field is required"
+                };
+
+                for (String indicator : errorIndicators) {
+                    if (pageSource.contains(indicator)) {
+                        logger.debug("Found validation error indicator in page source: {}", indicator);
+                        return true;
+                    }
+                }
+            } catch (Exception ignored) {
+                // Fallback failed
+            }
+
+            return false;
         } catch (Exception e) {
+            logger.debug("Error checking for validation errors: {}", e.getMessage());
             return false;
         }
     }
@@ -179,12 +257,69 @@ public class LoginPage extends BasePage {
      * @return List of error messages
      */
     public List<String> getValidationErrors() {
-        By errorSelector = SelectorUtils.getAuthSelector("authentication.login_page.validation.error_messages");
-        if (isElementDisplayed(errorSelector)) {
-            WebElement errorContainer = findElement(errorSelector);
-            return List.of(errorContainer.getText().split("\n"));
+        try {
+            // If no validation errors detected, return empty list
+            if (!hasValidationErrors()) {
+                return List.of();
+            }
+
+            // Try primary selector first
+            try {
+                By errorSelector = SelectorUtils.getAuthSelector("authentication.login_page.validation.error_messages");
+                if (isElementDisplayed(errorSelector)) {
+                    WebElement errorContainer = findElement(errorSelector);
+                    String errorText = errorContainer.getText();
+                    if (errorText != null && !errorText.trim().isEmpty()) {
+                        return List.of(errorText.split("\n"));
+                    }
+                }
+            } catch (Exception ignored) {
+                // Continue with fallbacks
+            }
+
+            // Try fallback selectors with enhanced list
+            String[] fallbackSelectors = {
+                ".validation-summary-errors",
+                ".validation-errors",
+                ".field-validation-error",
+                ".error-message",
+                ".login-error",
+                ".message-error",
+                ".error",
+                "[class*='error']:not([class*='no-error'])",
+                "[class*='validation']:not([class*='valid'])",
+                ".alert-danger",
+                ".alert-error",
+                "div[style*='color: red']",
+                "span[style*='color: red']",
+                ".text-danger"
+            };
+
+            for (String selector : fallbackSelectors) {
+                try {
+                    By fallbackBy = By.cssSelector(selector);
+                    if (isElementDisplayed(fallbackBy)) {
+                        WebElement errorContainer = findElement(fallbackBy);
+                        String errorText = errorContainer.getText();
+                        if (errorText != null && !errorText.trim().isEmpty()) {
+                            return List.of(errorText.split("\n"));
+                        }
+                    }
+                } catch (Exception ignored) {
+                    // Continue to next selector
+                }
+            }
+
+            // If still on login page after submit, assume validation failed
+            if (getCurrentUrl().contains("/login")) {
+                return List.of("Login validation failed - still on login page");
+            }
+
+            return List.of();
+        } catch (Exception e) {
+            logger.warn("Failed to get validation errors: {}", e.getMessage());
+            return List.of();
         }
-        return List.of();
     }
 
     /**
@@ -393,5 +528,37 @@ public class LoginPage extends BasePage {
      */
     public String getLoginPageTitle() {
         return getCurrentTitle();
+    }
+
+    /**
+     * Check if account lockout message is displayed
+     * @return true if account lockout message is visible
+     */
+    public boolean hasAccountLockoutMessage() {
+        try {
+            By lockoutSelector = By.cssSelector(".error-message, .validation-summary-errors, .field-validation-error");
+            return isElementDisplayed(lockoutSelector) &&
+                   (getText(lockoutSelector).toLowerCase().contains("locked") ||
+                    getText(lockoutSelector).toLowerCase().contains("disabled") ||
+                    getText(lockoutSelector).toLowerCase().contains("blocked"));
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /**
+     * Check if rate limiting message is displayed
+     * @return true if rate limiting message is visible
+     */
+    public boolean hasRateLimitingMessage() {
+        try {
+            By rateLimitSelector = By.cssSelector(".error-message, .validation-summary-errors, .field-validation-error");
+            return isElementDisplayed(rateLimitSelector) &&
+                   (getText(rateLimitSelector).toLowerCase().contains("too many attempts") ||
+                    getText(rateLimitSelector).toLowerCase().contains("rate limit") ||
+                    getText(rateLimitSelector).toLowerCase().contains("try again later"));
+        } catch (Exception e) {
+            return false;
+        }
     }
 }

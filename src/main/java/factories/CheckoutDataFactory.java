@@ -40,20 +40,19 @@ public class CheckoutDataFactory {
      * Create a random valid billing address
      */
     public static Address createRandomBillingAddress() {
-        Address address = Address.builder()
-                .firstName(faker.name().firstName())
-                .lastName(faker.name().lastName())
-                .email(faker.internet().emailAddress())
-                .company(faker.company().name())
-                .country(getRandomCountry())
-                .state(faker.address().state())
-                .city(faker.address().city())
-                .address1(faker.address().streetAddress())
-                .address2(faker.address().secondaryAddress())
-                .zipPostalCode(faker.address().zipCode())
-                .phoneNumber(faker.phoneNumber().phoneNumber())
-                .faxNumber(faker.phoneNumber().phoneNumber())
-                .build();
+        Address address = new Address();
+        address.setFirstName(faker.name().firstName());
+        address.setLastName(faker.name().lastName());
+        address.setEmail(faker.internet().emailAddress());
+        address.setCompany(faker.company().name());
+        address.setCountry(getRandomCountry());
+        address.setState(faker.address().state());
+        address.setCity(faker.address().city());
+        address.setAddress1(faker.address().streetAddress());
+        address.setAddress2(faker.address().secondaryAddress());
+        address.setZipPostalCode(faker.address().zipCode());
+        address.setPhoneNumber(faker.phoneNumber().phoneNumber());
+        address.setFaxNumber(faker.phoneNumber().phoneNumber());
 
         logger.debug("Created random billing address for: {} {}",
                     address.getFirstName(), address.getLastName());
@@ -200,6 +199,7 @@ public class CheckoutDataFactory {
         logger.debug("Selected payment method: {}", method);
         return method;
     }
+
 
     /**
      * Get all payment methods

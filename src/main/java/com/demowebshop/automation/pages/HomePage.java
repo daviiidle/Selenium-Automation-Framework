@@ -100,6 +100,33 @@ public class HomePage extends BasePage {
     }
 
     /**
+     * Navigate to random product for testing purposes
+     * @return ProductDetailsPage for a random product
+     */
+    public ProductDetailsPage navigateToRandomProduct() {
+        // Navigate to a category first
+        ProductCatalogPage catalogPage = navigateToBooks();
+
+        // Get first available product
+        if (catalogPage.hasProducts()) {
+            return catalogPage.clickFirstProduct();
+        } else {
+            // Fallback to computers category
+            catalogPage = navigateToComputers();
+            if (catalogPage.hasProducts()) {
+                return catalogPage.clickFirstProduct();
+            }
+        }
+
+        // Last resort - create a basic ProductDetailsPage
+        logger.warn("No products found, creating basic ProductDetailsPage");
+        return new ProductDetailsPage(driver);
+    }
+
+
+
+
+    /**
      * Check if cart icon is displayed
      * @return true if cart icon is visible
      */
@@ -108,13 +135,6 @@ public class HomePage extends BasePage {
         return isElementDisplayed(cartSelector);
     }
 
-    /**
-     * Get cart item count (alias for getCartQuantity)
-     * @return Number of items in cart
-     */
-    public int getCartItemCount() {
-        return getCartQuantity();
-    }
 
     /**
      * Click on wishlist link
@@ -125,6 +145,14 @@ public class HomePage extends BasePage {
         click(wishlistSelector);
         logger.info("Clicked wishlist link");
         return new WishlistPage(driver);
+    }
+
+    /**
+     * Get cart item count (alias for getCartQuantity)
+     * @return Number of items in cart
+     */
+    public int getCartItemCount() {
+        return getCartQuantity();
     }
 
     // Search Functionality
@@ -530,8 +558,34 @@ public class HomePage extends BasePage {
      */
     public boolean isLoginLinkDisplayed() {
         try {
-            By loginSelector = SelectorUtils.getHomepageSelector("homepage.header.login_link");
-            return isElementDisplayed(loginSelector);
+            // Try multiple selectors with shorter timeout for faster detection
+            String[] loginSelectors = {
+                "a[href='/login']",
+                "a[href*='login']",
+                ".header-links a:contains('Log in')",
+                "//a[contains(text(), 'Log in')]",
+                "//a[contains(@href, 'login')]"
+            };
+
+            for (String selector : loginSelectors) {
+                try {
+                    By loginBy;
+                    if (selector.startsWith("//")) {
+                        loginBy = By.xpath(selector);
+                    } else {
+                        loginBy = By.cssSelector(selector);
+                    }
+
+                    // Use shorter timeout to avoid long waits
+                    if (waitUtils.waitForElementToBeVisible(loginBy, 2) != null) {
+                        return waitUtils.waitForElementToBeVisible(loginBy, 2).isDisplayed();
+                    }
+                } catch (Exception ignored) {
+                    // Continue to next selector
+                }
+            }
+
+            return false;
         } catch (Exception e) {
             return false;
         }
@@ -543,8 +597,35 @@ public class HomePage extends BasePage {
      */
     public boolean isLogoutLinkDisplayed() {
         try {
-            By logoutSelector = By.cssSelector("a[href='/logout']");
-            return isElementDisplayed(logoutSelector);
+            // Try multiple selectors with shorter timeout for faster detection
+            String[] logoutSelectors = {
+                "a[href='/logout']",
+                "a[href*='logout']",
+                ".header-links a:contains('Log out')",
+                "//a[contains(text(), 'Log out')]",
+                "//a[contains(@href, 'logout')]",
+                "//a[text()='Log out']"
+            };
+
+            for (String selector : logoutSelectors) {
+                try {
+                    By logoutBy;
+                    if (selector.startsWith("//")) {
+                        logoutBy = By.xpath(selector);
+                    } else {
+                        logoutBy = By.cssSelector(selector);
+                    }
+
+                    // Use shorter timeout to avoid long waits
+                    if (waitUtils.waitForElementToBeVisible(logoutBy, 2) != null) {
+                        return waitUtils.waitForElementToBeVisible(logoutBy, 2).isDisplayed();
+                    }
+                } catch (Exception ignored) {
+                    // Continue to next selector
+                }
+            }
+
+            return false;
         } catch (Exception e) {
             return false;
         }
@@ -555,10 +636,23 @@ public class HomePage extends BasePage {
      * @return HomePage after logout
      */
     public HomePage clickLogoutLink() {
-        By logoutSelector = By.cssSelector("a[href='/logout']");
-        click(logoutSelector);
-        logger.info("Clicked logout link");
-        return new HomePage(driver);
+        try {
+            // Try primary selector first
+            By logoutSelector = By.cssSelector("a[href='/logout']");
+            if (isElementDisplayed(logoutSelector)) {
+                click(logoutSelector);
+                logger.info("Clicked logout link using primary selector");
+                return new HomePage(driver);
+            }
+            // Fallback to text-based selector
+            By textBasedSelector = By.xpath("//a[contains(text(), 'Log out')]");
+            click(textBasedSelector);
+            logger.info("Clicked logout link using text-based selector");
+            return new HomePage(driver);
+        } catch (Exception e) {
+            logger.warn("Could not click logout link: {}", e.getMessage());
+            throw new RuntimeException("Logout link not found or clickable", e);
+        }
     }
 
     /**
@@ -825,6 +919,7 @@ public class HomePage extends BasePage {
         return new ShoppingCartPage(driver);
     }
 
+
     /**
      * Scroll to footer section
      * @return HomePage for method chaining
@@ -1006,6 +1101,7 @@ public class HomePage extends BasePage {
         return this;
     }
 
+
     /**
      * Get H1 text from page
      * @return H1 text or empty string
@@ -1127,6 +1223,86 @@ public class HomePage extends BasePage {
         driver.navigate().refresh();
         waitForPageToLoad();
         return this;
+    }
+
+    /**
+     * Navigate to account info page
+     * @return CustomerInfoPage
+     */
+    public CustomerInfoPage navigateToAccountInfo() {
+        try {
+            By accountLinkSelector = By.cssSelector("a[href*='/customer/info']");
+            click(accountLinkSelector);
+            logger.info("Navigated to account info");
+            return new CustomerInfoPage(driver);
+        } catch (Exception e) {
+            logger.warn("Could not navigate to account info: {}", e.getMessage());
+            return new CustomerInfoPage(driver);
+        }
+    }
+
+    /**
+     * Navigate to order history page
+     * @return OrderHistoryPage
+     */
+    public OrderHistoryPage navigateToOrderHistory() {
+        try {
+            By ordersLinkSelector = By.cssSelector("a[href*='/customer/orders']");
+            click(ordersLinkSelector);
+            logger.info("Navigated to order history");
+            return new OrderHistoryPage(driver);
+        } catch (Exception e) {
+            logger.warn("Could not navigate to order history: {}", e.getMessage());
+            return new OrderHistoryPage(driver);
+        }
+    }
+
+    /**
+     * Navigate to address book page
+     * @return AddressBookPage
+     */
+    public AddressBookPage navigateToAddressBook() {
+        try {
+            By addressBookLinkSelector = By.cssSelector("a[href*='/customer/addresses']");
+            click(addressBookLinkSelector);
+            logger.info("Navigated to address book");
+            return new AddressBookPage(driver);
+        } catch (Exception e) {
+            logger.warn("Could not navigate to address book: {}", e.getMessage());
+            return new AddressBookPage(driver);
+        }
+    }
+
+    /**
+     * Navigate to password change page
+     * @return ChangePasswordPage
+     */
+    public ChangePasswordPage navigateToPasswordChange() {
+        try {
+            By passwordLinkSelector = By.cssSelector("a[href*='/customer/changepassword']");
+            click(passwordLinkSelector);
+            logger.info("Navigated to password change");
+            return new ChangePasswordPage(driver);
+        } catch (Exception e) {
+            logger.warn("Could not navigate to password change: {}", e.getMessage());
+            return new ChangePasswordPage(driver);
+        }
+    }
+
+    /**
+     * Click account dropdown
+     * @return AccountDropdown
+     */
+    public AccountDropdown clickAccountDropdown() {
+        try {
+            By accountDropdownSelector = By.cssSelector(".account, .header-links .account");
+            click(accountDropdownSelector);
+            logger.info("Clicked account dropdown");
+            return new AccountDropdown(driver);
+        } catch (Exception e) {
+            logger.warn("Could not click account dropdown: {}", e.getMessage());
+            return new AccountDropdown(driver);
+        }
     }
 
     /**
@@ -1281,4 +1457,151 @@ public class HomePage extends BasePage {
             return productElement;
         }
     }
+
+    /**
+     * Inner class representing the account dropdown functionality
+     */
+    public static class AccountDropdown {
+        private final WebDriver driver;
+
+        public AccountDropdown(WebDriver driver) {
+            this.driver = driver;
+        }
+
+        /**
+         * Click on Customer Info link
+         * @return CustomerInfoPage
+         */
+        public CustomerInfoPage clickCustomerInfo() {
+            try {
+                By customerInfoSelector = By.cssSelector("a[href*='customer/info'], .account-navigation a[href*='info']");
+                driver.findElement(customerInfoSelector).click();
+                return new CustomerInfoPage(driver);
+            } catch (Exception e) {
+                throw new RuntimeException("Could not navigate to customer info", e);
+            }
+        }
+
+        /**
+         * Click on Orders link
+         * @return OrderHistoryPage
+         */
+        public OrderHistoryPage clickOrders() {
+            try {
+                By ordersSelector = By.cssSelector("a[href*='customer/orders'], .account-navigation a[href*='orders']");
+                driver.findElement(ordersSelector).click();
+                return new OrderHistoryPage(driver);
+            } catch (Exception e) {
+                throw new RuntimeException("Could not navigate to orders", e);
+            }
+        }
+
+        /**
+         * Click on Addresses link
+         * @return AddressBookPage
+         */
+        public AddressBookPage clickAddresses() {
+            try {
+                By addressesSelector = By.cssSelector("a[href*='customer/addresses'], .account-navigation a[href*='addresses']");
+                driver.findElement(addressesSelector).click();
+                return new AddressBookPage(driver);
+            } catch (Exception e) {
+                throw new RuntimeException("Could not navigate to addresses", e);
+            }
+        }
+
+        /**
+         * Click on Change Password link
+         * @return ChangePasswordPage
+         */
+        public ChangePasswordPage clickChangePassword() {
+            try {
+                By changePasswordSelector = By.cssSelector("a[href*='customer/changepassword'], .account-navigation a[href*='password']");
+                driver.findElement(changePasswordSelector).click();
+                return new ChangePasswordPage(driver);
+            } catch (Exception e) {
+                throw new RuntimeException("Could not navigate to change password", e);
+            }
+        }
+
+        /**
+         * Check if Customer Info link is displayed
+         * @return true if Customer Info link is visible
+         */
+        public boolean isCustomerInfoLinkDisplayed() {
+            try {
+                By customerInfoSelector = By.cssSelector("a[href*='customer/info'], .account-navigation a[href*='info']");
+                return driver.findElement(customerInfoSelector).isDisplayed();
+            } catch (Exception e) {
+                return false;
+            }
+        }
+
+        /**
+         * Check if My Account link is displayed
+         * @return true if My Account link is visible
+         */
+        public boolean isMyAccountLinkDisplayed() {
+            try {
+                By myAccountSelector = By.cssSelector("a[href*='customer'], .account-link, .my-account");
+                return driver.findElement(myAccountSelector).isDisplayed();
+            } catch (Exception e) {
+                return false;
+            }
+        }
+
+        /**
+         * Click on My Account link
+         * @return CustomerInfoPage
+         */
+        public CustomerInfoPage clickMyAccount() {
+            try {
+                By myAccountSelector = By.cssSelector("a[href*='customer'], .account-link, .my-account");
+                driver.findElement(myAccountSelector).click();
+                return new CustomerInfoPage(driver);
+            } catch (Exception e) {
+                throw new RuntimeException("Could not navigate to my account", e);
+            }
+        }
+
+        /**
+         * Check if Orders link is displayed
+         * @return true if Orders link is visible
+         */
+        public boolean isOrdersLinkDisplayed() {
+            try {
+                By ordersSelector = By.cssSelector("a[href*='customer/orders'], .account-navigation a[href*='orders']");
+                return driver.findElement(ordersSelector).isDisplayed();
+            } catch (Exception e) {
+                return false;
+            }
+        }
+
+        /**
+         * Check if Change Password link is displayed
+         * @return true if Change Password link is visible
+         */
+        public boolean isChangePasswordLinkDisplayed() {
+            try {
+                By changePasswordSelector = By.cssSelector("a[href*='customer/changepassword'], .account-navigation a[href*='password']");
+                return driver.findElement(changePasswordSelector).isDisplayed();
+            } catch (Exception e) {
+                return false;
+            }
+        }
+
+        /**
+         * Check if Addresses link is displayed
+         * @return true if Addresses link is visible
+         */
+        public boolean isAddressesLinkDisplayed() {
+            try {
+                By addressesSelector = By.cssSelector("a[href*='customer/addresses'], .account-navigation a[href*='addresses']");
+                return driver.findElement(addressesSelector).isDisplayed();
+            } catch (Exception e) {
+                return false;
+            }
+        }
+    }
+
 }

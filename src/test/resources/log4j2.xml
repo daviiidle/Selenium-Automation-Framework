@@ -1,117 +1,86 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Configuration status="WARN">
     <Properties>
-        <Property name="LOG_PATTERN">%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n</Property>
+        <Property name="LIVE_PATTERN">%d{HH:mm:ss} %-5level %logger{25} - %msg%n</Property>
         <Property name="LOG_PATH">target/logs</Property>
     </Properties>
 
     <Appenders>
-        <!-- Console Appender -->
-        <Console name="Console" target="SYSTEM_OUT">
-            <PatternLayout pattern="${LOG_PATTERN}"/>
-            <ThresholdFilter level="INFO" onMatch="ACCEPT" onMismatch="DENY"/>
-        </Console>
-
-        <!-- File Appender for All Logs -->
-        <RollingFile name="FileAppender" fileName="${LOG_PATH}/application.log"
-                     filePattern="${LOG_PATH}/application-%d{yyyy-MM-dd}-%i.log.gz">
-            <PatternLayout pattern="${LOG_PATTERN}"/>
+        <!-- Live Test Log - Clean and Direct -->
+        <RollingFile name="LiveTestLog" fileName="${LOG_PATH}/test-run.log"
+                     filePattern="${LOG_PATH}/test-run-%d{yyyy-MM-dd-HH-mm}.log">
+            <PatternLayout pattern="${LIVE_PATTERN}"/>
             <Policies>
-                <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
-                <SizeBasedTriggeringPolicy size="50MB"/>
+                <OnStartupTriggeringPolicy />
+                <SizeBasedTriggeringPolicy size="10MB"/>
             </Policies>
-            <DefaultRolloverStrategy max="30"/>
+            <DefaultRolloverStrategy max="5"/>
         </RollingFile>
 
-        <!-- Test Execution Specific Logs -->
-        <RollingFile name="TestExecutionAppender" fileName="${LOG_PATH}/test-execution.log"
-                     filePattern="${LOG_PATH}/test-execution-%d{yyyy-MM-dd}-%i.log.gz">
-            <PatternLayout pattern="${LOG_PATTERN}"/>
-            <Policies>
-                <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
-                <SizeBasedTriggeringPolicy size="50MB"/>
-            </Policies>
-            <DefaultRolloverStrategy max="15"/>
-        </RollingFile>
-
-        <!-- Error Logs -->
-        <RollingFile name="ErrorAppender" fileName="${LOG_PATH}/error.log"
-                     filePattern="${LOG_PATH}/error-%d{yyyy-MM-dd}-%i.log.gz">
-            <PatternLayout pattern="${LOG_PATTERN}"/>
+        <!-- Error Log - Issues Only -->
+        <RollingFile name="ErrorLog" fileName="${LOG_PATH}/errors.log"
+                     filePattern="${LOG_PATH}/errors-%d{yyyy-MM-dd}.log">
+            <PatternLayout pattern="%d{HH:mm:ss} ERROR %logger{15} - %msg%n"/>
             <ThresholdFilter level="ERROR" onMatch="ACCEPT" onMismatch="DENY"/>
             <Policies>
-                <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
-                <SizeBasedTriggeringPolicy size="50MB"/>
+                <TimeBasedTriggeringPolicy interval="1"/>
             </Policies>
-            <DefaultRolloverStrategy max="15"/>
+            <DefaultRolloverStrategy max="3"/>
         </RollingFile>
 
-        <!-- Performance Logs -->
-        <RollingFile name="PerformanceAppender" fileName="${LOG_PATH}/performance.log"
-                     filePattern="${LOG_PATH}/performance-%d{yyyy-MM-dd}-%i.log.gz">
-            <PatternLayout pattern="${LOG_PATTERN}"/>
-            <Policies>
-                <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
-                <SizeBasedTriggeringPolicy size="50MB"/>
-            </Policies>
-            <DefaultRolloverStrategy max="10"/>
-        </RollingFile>
+        <!-- Console - Minimal Output -->
+        <Console name="Console" target="SYSTEM_OUT">
+            <PatternLayout pattern="%d{HH:mm:ss} %-5level %msg%n"/>
+            <ThresholdFilter level="INFO" onMatch="ACCEPT" onMismatch="DENY"/>
+        </Console>
     </Appenders>
 
     <Loggers>
-        <!-- Framework Loggers -->
-        <Logger name="config" level="DEBUG" additivity="false">
-            <AppenderRef ref="Console"/>
-            <AppenderRef ref="FileAppender"/>
-        </Logger>
-
-        <Logger name="drivers" level="DEBUG" additivity="false">
-            <AppenderRef ref="Console"/>
-            <AppenderRef ref="FileAppender"/>
-        </Logger>
-
-        <Logger name="pages" level="DEBUG" additivity="false">
-            <AppenderRef ref="Console"/>
-            <AppenderRef ref="FileAppender"/>
-        </Logger>
-
-        <Logger name="utils" level="DEBUG" additivity="false">
-            <AppenderRef ref="Console"/>
-            <AppenderRef ref="FileAppender"/>
-        </Logger>
-
-        <!-- Test Execution Logger -->
+        <!-- Test Execution - Main Logger -->
         <Logger name="tests" level="INFO" additivity="false">
             <AppenderRef ref="Console"/>
-            <AppenderRef ref="TestExecutionAppender"/>
-            <AppenderRef ref="ErrorAppender"/>
+            <AppenderRef ref="LiveTestLog"/>
+            <AppenderRef ref="ErrorLog"/>
         </Logger>
 
-        <!-- Performance Logger -->
-        <Logger name="performance" level="INFO" additivity="false">
-            <AppenderRef ref="PerformanceAppender"/>
+        <!-- Page Actions - Key Actions Only -->
+        <Logger name="pages" level="INFO" additivity="false">
+            <AppenderRef ref="LiveTestLog"/>
+            <AppenderRef ref="ErrorLog"/>
         </Logger>
 
-        <!-- Selenium WebDriver Logger -->
-        <Logger name="org.openqa.selenium" level="WARN" additivity="false">
-            <AppenderRef ref="FileAppender"/>
+        <!-- Utils and Assertions -->
+        <Logger name="utils" level="WARN" additivity="false">
+            <AppenderRef ref="LiveTestLog"/>
+            <AppenderRef ref="ErrorLog"/>
         </Logger>
 
-        <!-- WebDriverManager Logger -->
-        <Logger name="io.github.bonigarcia" level="WARN" additivity="false">
-            <AppenderRef ref="FileAppender"/>
+        <!-- Framework Components -->
+        <Logger name="config" level="WARN" additivity="false">
+            <AppenderRef ref="LiveTestLog"/>
         </Logger>
 
-        <!-- TestNG Logger -->
-        <Logger name="org.testng" level="WARN" additivity="false">
-            <AppenderRef ref="TestExecutionAppender"/>
+        <Logger name="drivers" level="WARN" additivity="false">
+            <AppenderRef ref="LiveTestLog"/>
+        </Logger>
+
+        <!-- External Libraries - Errors Only -->
+        <Logger name="org.openqa.selenium" level="ERROR" additivity="false">
+            <AppenderRef ref="ErrorLog"/>
+        </Logger>
+
+        <Logger name="io.github.bonigarcia" level="ERROR" additivity="false">
+            <AppenderRef ref="ErrorLog"/>
+        </Logger>
+
+        <Logger name="org.testng" level="ERROR" additivity="false">
+            <AppenderRef ref="ErrorLog"/>
         </Logger>
 
         <!-- Root Logger -->
-        <Root level="INFO">
-            <AppenderRef ref="Console"/>
-            <AppenderRef ref="FileAppender"/>
-            <AppenderRef ref="ErrorAppender"/>
+        <Root level="WARN">
+            <AppenderRef ref="LiveTestLog"/>
+            <AppenderRef ref="ErrorLog"/>
         </Root>
     </Loggers>
 </Configuration>

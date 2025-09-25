@@ -1,11 +1,11 @@
 package listeners;
 
-import drivers.WebDriverFactory;
+import com.demowebshop.automation.factories.driver.WebDriverFactory;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.testng.ITestListener;
 import org.testng.ITestResult;
-import utils.ScreenshotUtils;
+import com.demowebshop.automation.utils.reporting.ScreenshotUtils;
 
 public class ScreenshotListener implements ITestListener {
     private static final Logger logger = LogManager.getLogger(ScreenshotListener.class);
@@ -16,7 +16,7 @@ public class ScreenshotListener implements ITestListener {
 
         try {
             String testName = result.getTestClass().getName() + "_" + result.getMethod().getMethodName();
-            String screenshotPath = ScreenshotUtils.captureScreenshot(
+            String screenshotPath = ScreenshotUtils.takeScreenshot(
                 WebDriverFactory.getDriver(),
                 testName + "_failure"
             );

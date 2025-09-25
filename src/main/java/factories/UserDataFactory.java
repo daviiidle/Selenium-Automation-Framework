@@ -14,7 +14,7 @@ public class UserDataFactory {
     private static final Faker faker = new Faker(new Locale("en-US"));
     private static final Random random = new SecureRandom();
 
-    private static final String[] GENDERS = {"M", "F"};
+    private static final String[] GENDERS = {"Male", "Female"};
     private static final String[] DOMAINS = {"gmail.com", "yahoo.com", "hotmail.com", "outlook.com", "test.com"};
 
     public static User createRandomUser() {
@@ -99,13 +99,24 @@ public class UserDataFactory {
                 .firstName(firstName)
                 .lastName(lastName)
                 .email(generateUniqueEmail(firstName, lastName))
-                .password("")
+                .password(generateSecurePassword())
                 .gender(GENDERS[random.nextInt(GENDERS.length)])
-                .dateOfBirth(faker.date().birthday(18, 80))
-                .company("")
-                .newsletter(false)
                 .build();
     }
+
+    // Additional helper methods for test scenarios
+    public static String generateFirstName() {
+        return faker.name().firstName();
+    }
+
+    public static String generateLastName() {
+        return faker.name().lastName();
+    }
+
+    public static String generateStrongPassword() {
+        return generateSecurePassword();
+    }
+
 
     public static String generateUniqueEmail(String firstName, String lastName) {
         String domain = DOMAINS[random.nextInt(DOMAINS.length)];

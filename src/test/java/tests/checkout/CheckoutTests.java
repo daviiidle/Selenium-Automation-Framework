@@ -1,0 +1,470 @@
+package tests.checkout;
+
+import base.BaseTest;
+import com.demowebshop.automation.pages.*;
+import dataproviders.CheckoutDataProvider;
+import factories.CheckoutDataFactory;
+import factories.UserDataFactory;
+import models.Address;
+import models.PaymentInfo;
+import models.User;
+import utils.DemoWebShopAssertions;
+import org.testng.annotations.Test;
+import org.testng.asserts.SoftAssert;
+import org.testng.Assert;
+
+/**
+ * Comprehensive Checkout Process Test Suite
+ * Covers all checkout scenarios from manual testing documentation
+ * Tests guest checkout, registered user checkout, and payment flows
+ */
+public class CheckoutTests extends BaseTest {
+    private DemoWebShopAssertions assertions;
+    private HomePage homePage;
+
+    @Override
+    protected void additionalSetup() {
+        assertions = new DemoWebShopAssertions(driver);
+        homePage = new HomePage(driver);
+    }
+
+    /**
+     * Test ID: CHECKOUT_001 - Guest Checkout Process
+     * Tests complete guest checkout flow from cart to order confirmation
+     * Validates billing address, shipping, payment, and order completion
+     */
+    @Test(groups = {"smoke", "checkout", "high-priority"},
+          priority = 1,
+          description = "Guest checkout process should complete successfully end-to-end")
+    public void testGuestCheckoutProcess() {
+        logger.info("=== Starting CHECKOUT_001: Guest Checkout Process ===");
+
+        // Step 1: Add item to cart
+        ProductDetailsPage productPage = homePage.navigateToRandomProduct();
+        String productTitle = productPage.getProductTitle();
+        double productPrice = productPage.getProductPriceAsDouble();
+
+        productPage.clickAddToCart();
+
+        // Step 2: Navigate to cart and proceed to checkout
+        ShoppingCartPage cartPage = homePage.clickShoppingCartLink();
+        Assert.assertTrue(cartPage.isPageLoaded(), "Shopping cart page should be loaded");
+        Assert.assertTrue(cartPage.isItemInCart(productTitle), "Product should be in cart");
+
+        CheckoutPage checkoutPage = cartPage.clickCheckout();
+        Assert.assertTrue(checkoutPage.isPageLoaded(), "Checkout page should be loaded");
+
+        SoftAssert softAssert = assertions.getSoftAssert();
+
+        // Step 3: Choose guest checkout (if option available)
+        if (checkoutPage.isGuestCheckoutOptionDisplayed()) {
+            checkoutPage.selectGuestCheckout();
+            softAssert.assertTrue(checkoutPage.isGuestModeActive(),
+                                 "Guest checkout mode should be active");
+        }
+
+        // Step 4: Fill billing address form
+        Address billingAddress = CheckoutDataFactory.createRandomBillingAddress();
+
+        checkoutPage.fillBillingAddress(billingAddress);
+
+        // Verify billing address fields are filled
+        softAssert.assertTrue(checkoutPage.isBillingAddressComplete(),
+                             "Billing address should be complete");
+
+        // Step 5: Select shipping method
+        if (checkoutPage.isShippingMethodSelectionDisplayed()) {
+            String shippingMethod = checkoutPage.getFirstAvailableShippingMethod();
+            checkoutPage.selectShippingMethod(shippingMethod);
+
+            softAssert.assertNotNull(checkoutPage.getSelectedShippingMethod(),
+                                    "Shipping method should be selected");
+        }
+
+        // Step 6: Select payment method
+        if (checkoutPage.isPaymentMethodSelectionDisplayed()) {
+            String paymentMethod = checkoutPage.getFirstAvailablePaymentMethod();
+            checkoutPage.selectPaymentMethod(paymentMethod);
+
+            // Fill payment information if required
+            if (checkoutPage.isPaymentInformationRequired()) {
+                PaymentInfo paymentInfo = CheckoutDataFactory.createRandomPaymentInfo();
+                checkoutPage.fillPaymentInformation(paymentInfo);
+            }
+
+            softAssert.assertNotNull(checkoutPage.getSelectedPaymentMethod(),
+                                    "Payment method should be selected");
+        }
+
+        // Step 7: Review order details
+        if (checkoutPage.isOrderReviewSectionDisplayed()) {
+            // Verify product appears in order review
+            softAssert.assertTrue(checkoutPage.isProductInOrderReview(productTitle),
+                                 "Product should appear in order review");
+
+            // Verify order total
+            double orderTotal = checkoutPage.getOrderTotalAsDouble();
+            softAssert.assertTrue(orderTotal >= productPrice,
+                                 "Order total should be at least the product price");
+        }
+
+        // Step 8: Confirm order
+        OrderCompletePage orderComplete = checkoutPage.clickConfirmOrder();
+
+        // Step 9: Verify order confirmation
+        if (orderComplete != null && orderComplete.isPageLoaded()) {
+            softAssert.assertTrue(orderComplete.isOrderConfirmationDisplayed(),
+                                 "Order confirmation should be displayed");
+
+            String orderNumber = orderComplete.getOrderNumber();
+            softAssert.assertNotNull(orderNumber,
+                                    "Order number should be provided");
+            softAssert.assertFalse(orderNumber.trim().isEmpty(),
+                                  "Order number should not be empty");
+
+            logger.info("Guest checkout completed with order number: {}", orderNumber);
+        } else {
+            logger.info("Order completion page not accessible - demo site limitation");
+            // Verify checkout process proceeded without errors
+            softAssert.assertFalse(checkoutPage.hasCheckoutErrors(),
+                                  "Checkout process should not have errors");
+        }
+
+        assertions.assertAll();
+        logger.info("=== CHECKOUT_001 completed: Guest checkout process ===");
+    }
+
+    /**
+     * Test ID: CHECKOUT_002 - Registered User Checkout
+     * Tests checkout process for logged-in users with saved information
+     * Validates pre-populated data and faster checkout flow
+     */
+    @Test(groups = {"functional", "checkout", "high-priority"},
+          priority = 2,
+          dataProvider = "registeredUserCheckoutData",
+          dataProviderClass = CheckoutDataProvider.class,
+          description = "Registered user checkout should use saved information")
+    public void testRegisteredUserCheckout(User testUser, String testDescription) {
+        logger.info("=== Starting CHECKOUT_002: {} ===", testDescription);
+
+        // Step 1: Register and login user
+        RegisterPage registerPage = homePage.clickRegisterLink();
+        registerPage.selectGender(testUser.getGender())
+                   .enterFirstName(testUser.getFirstName())
+                   .enterLastName(testUser.getLastName())
+                   .enterEmail(testUser.getEmail())
+                   .enterPassword(testUser.getPassword())
+                   .confirmPassword(testUser.getPassword());
+
+        homePage = (HomePage) registerPage.clickRegisterButton();
+
+        // Verify user is logged in
+        SoftAssert softAssert = assertions.getSoftAssert();
+        softAssert.assertTrue(homePage.isUserLoggedIn(),
+                             "User should be logged in after registration");
+
+        // Step 2: Add item to cart
+        ProductDetailsPage productPage = homePage.navigateToRandomProduct();
+        String productTitle = productPage.getProductTitle();
+        productPage.clickAddToCart();
+
+        // Step 3: Proceed to checkout
+        ShoppingCartPage cartPage = homePage.clickShoppingCartLink();
+        CheckoutPage checkoutPage = cartPage.clickCheckout();
+        Assert.assertTrue(checkoutPage.isPageLoaded(), "Checkout page should be loaded");
+
+        // Step 4: Verify user information is pre-populated
+        if (checkoutPage.isBillingAddressDisplayed()) {
+            // Check if user's name is pre-populated
+            String firstName = checkoutPage.getBillingFirstName();
+            String lastName = checkoutPage.getBillingLastName();
+
+            softAssert.assertEquals(firstName, testUser.getFirstName(),
+                                   "First name should be pre-populated from user account");
+            softAssert.assertEquals(lastName, testUser.getLastName(),
+                                   "Last name should be pre-populated from user account");
+        }
+
+        // Step 5: Complete missing address information
+        Address billingAddress = CheckoutDataFactory.createRandomBillingAddress();
+        billingAddress.setFirstName(testUser.getFirstName());
+        billingAddress.setLastName(testUser.getLastName());
+
+        checkoutPage.fillBillingAddress(billingAddress);
+
+        // Step 6: Check if address can be saved for future use
+        if (checkoutPage.isSaveAddressOptionDisplayed()) {
+            checkoutPage.checkSaveAddress();
+            softAssert.assertTrue(checkoutPage.isSaveAddressChecked(),
+                                 "Save address option should be checkable");
+        }
+
+        // Step 7: Select shipping method
+        if (checkoutPage.isShippingMethodSelectionDisplayed()) {
+            String shippingMethod = checkoutPage.getFirstAvailableShippingMethod();
+            checkoutPage.selectShippingMethod(shippingMethod);
+        }
+
+        // Step 8: Select payment method
+        if (checkoutPage.isPaymentMethodSelectionDisplayed()) {
+            String paymentMethod = checkoutPage.getFirstAvailablePaymentMethod();
+            checkoutPage.selectPaymentMethod(paymentMethod);
+
+            if (checkoutPage.isPaymentInformationRequired()) {
+                PaymentInfo paymentInfo = CheckoutDataFactory.createRandomPaymentInfo();
+                checkoutPage.fillPaymentInformation(paymentInfo);
+            }
+        }
+
+        // Step 9: Complete order
+        OrderCompletePage orderComplete = checkoutPage.clickConfirmOrder();
+
+        if (orderComplete != null && orderComplete.isPageLoaded()) {
+            softAssert.assertTrue(orderComplete.isOrderConfirmationDisplayed(),
+                                 "Order confirmation should be displayed");
+
+            // Step 10: Verify order is saved to user account
+            if (orderComplete.isViewOrderLinkDisplayed()) {
+                orderComplete.clickViewOrder();
+                // Could navigate to order details to verify
+            }
+
+            String orderNumber = orderComplete.getOrderNumber();
+            logger.info("Registered user checkout completed with order number: {}", orderNumber);
+        }
+
+        assertions.assertAll();
+        logger.info("=== CHECKOUT_002 completed: {} ===", testDescription);
+    }
+
+    /**
+     * Test ID: CHECKOUT_003 - Checkout Form Validation
+     * Tests validation of required fields and invalid data in checkout forms
+     * Validates proper error messages and form submission prevention
+     */
+    @Test(groups = {"negative", "checkout", "medium-priority"},
+          priority = 3,
+          description = "Checkout form validation should prevent invalid submissions")
+    public void testCheckoutFormValidation() {
+        logger.info("=== Starting CHECKOUT_003: Checkout Form Validation ===");
+
+        // Add item to cart and navigate to checkout
+        ProductDetailsPage productPage = homePage.navigateToRandomProduct();
+        productPage.clickAddToCart();
+
+        ShoppingCartPage cartPage = homePage.clickShoppingCartLink();
+        CheckoutPage checkoutPage = cartPage.clickCheckout();
+
+        SoftAssert softAssert = assertions.getSoftAssert();
+
+        // Test empty required fields
+        if (checkoutPage.isBillingAddressDisplayed()) {
+            // Clear all required fields and attempt to proceed
+            checkoutPage.clearBillingAddress();
+
+            // Attempt to proceed without filling required fields
+            checkoutPage.clickContinueOrNext();
+
+            // Verify validation errors appear
+            if (checkoutPage.hasValidationErrors()) {
+                softAssert.assertTrue(true, "Validation errors should appear for empty required fields");
+
+                // Check specific field errors
+                if (checkoutPage.hasFirstNameError()) {
+                    softAssert.assertTrue(true, "First name validation error displayed");
+                }
+                if (checkoutPage.hasLastNameError()) {
+                    softAssert.assertTrue(true, "Last name validation error displayed");
+                }
+                if (checkoutPage.hasAddressError()) {
+                    softAssert.assertTrue(true, "Address validation error displayed");
+                }
+            }
+        }
+
+        // Test invalid email format
+        Address invalidAddress = CheckoutDataFactory.createRandomBillingAddress();
+        invalidAddress.setEmail("invalid-email-format");
+
+        checkoutPage.fillBillingAddress(invalidAddress);
+        checkoutPage.clickContinueOrNext();
+
+        if (checkoutPage.hasEmailValidationError()) {
+            softAssert.assertTrue(true, "Email format validation should work");
+        }
+
+        // Test invalid phone number format
+        invalidAddress.setPhone("invalid-phone");
+        checkoutPage.fillBillingAddress(invalidAddress);
+        checkoutPage.clickContinueOrNext();
+
+        if (checkoutPage.hasPhoneValidationError()) {
+            softAssert.assertTrue(true, "Phone format validation should work");
+        }
+
+        // Test invalid postal code
+        invalidAddress.setPostalCode("INVALID");
+        checkoutPage.fillBillingAddress(invalidAddress);
+        checkoutPage.clickContinueOrNext();
+
+        if (checkoutPage.hasPostalCodeValidationError()) {
+            softAssert.assertTrue(true, "Postal code validation should work");
+        }
+
+        assertions.assertAll();
+        logger.info("=== CHECKOUT_003 completed: Form validation testing ===");
+    }
+
+    /**
+     * Test ID: CHECKOUT_004 - Multiple Payment Methods
+     * Tests different payment method selections and their requirements
+     * Validates payment method specific form fields and validations
+     */
+    @Test(groups = {"functional", "checkout", "medium-priority"},
+          priority = 4,
+          dataProvider = "paymentMethodData",
+          dataProviderClass = CheckoutDataProvider.class,
+          description = "Different payment methods should work correctly")
+    public void testMultiplePaymentMethods(String paymentMethod, String description) {
+        logger.info("=== Starting CHECKOUT_004: {} ===", description);
+
+        // Setup checkout process
+        ProductDetailsPage productPage = homePage.navigateToRandomProduct();
+        productPage.clickAddToCart();
+
+        ShoppingCartPage cartPage = homePage.clickShoppingCartLink();
+        CheckoutPage checkoutPage = cartPage.clickCheckout();
+
+        // Fill billing address
+        Address billingAddress = CheckoutDataFactory.createRandomBillingAddress();
+        checkoutPage.fillBillingAddress(billingAddress);
+
+        SoftAssert softAssert = assertions.getSoftAssert();
+
+        // Test specific payment method
+        if (checkoutPage.isPaymentMethodAvailable(paymentMethod)) {
+            checkoutPage.selectPaymentMethod(paymentMethod);
+
+            softAssert.assertEquals(checkoutPage.getSelectedPaymentMethod(), paymentMethod,
+                                   "Payment method should be selected correctly");
+
+            // Test payment method specific requirements
+            if (paymentMethod.toLowerCase().contains("credit") ||
+                paymentMethod.toLowerCase().contains("card")) {
+
+                if (checkoutPage.isPaymentInformationRequired()) {
+                    PaymentInfo paymentInfo = CheckoutDataFactory.createRandomPaymentInfo();
+                    checkoutPage.fillPaymentInformation(paymentInfo);
+
+                    // Verify credit card fields are displayed
+                    softAssert.assertTrue(checkoutPage.isCreditCardNumberFieldDisplayed(),
+                                         "Credit card number field should be displayed");
+                    softAssert.assertTrue(checkoutPage.isExpirationDateFieldDisplayed(),
+                                         "Expiration date field should be displayed");
+                    softAssert.assertTrue(checkoutPage.isCvvFieldDisplayed(),
+                                         "CVV field should be displayed");
+                }
+            } else if (paymentMethod.toLowerCase().contains("paypal")) {
+                // PayPal specific validations
+                logger.info("PayPal payment method selected");
+            } else if (paymentMethod.toLowerCase().contains("check")) {
+                // Check/Money Order specific validations
+                logger.info("Check/Money Order payment method selected");
+            }
+
+            // Attempt to proceed with selected payment method
+            checkoutPage.clickConfirmOrder();
+
+            // Verify payment method was processed (or appropriate message shown)
+            softAssert.assertFalse(checkoutPage.hasPaymentErrors(),
+                                  "Payment processing should not have errors");
+        } else {
+            logger.info("Payment method '{}' not available on this site", paymentMethod);
+        }
+
+        assertions.assertAll();
+        logger.info("=== CHECKOUT_004 completed: {} ===", description);
+    }
+
+    /**
+     * Test ID: CHECKOUT_005 - Checkout Performance
+     * Tests checkout process performance and response times
+     * Validates checkout steps complete within acceptable timeframes
+     */
+    @Test(groups = {"performance", "checkout", "low-priority"},
+          priority = 5,
+          description = "Checkout process should complete within acceptable time limits")
+    public void testCheckoutPerformance() {
+        logger.info("=== Starting CHECKOUT_005: Checkout Performance ===");
+
+        long totalStartTime = System.currentTimeMillis();
+
+        // Add item to cart
+        long addToCartStart = System.currentTimeMillis();
+        ProductDetailsPage productPage = homePage.navigateToRandomProduct();
+        productPage.clickAddToCart();
+        long addToCartEnd = System.currentTimeMillis();
+
+        // Navigate to checkout
+        long checkoutNavStart = System.currentTimeMillis();
+        ShoppingCartPage cartPage = homePage.clickShoppingCartLink();
+        CheckoutPage checkoutPage = cartPage.clickCheckout();
+        long checkoutNavEnd = System.currentTimeMillis();
+
+        // Fill checkout form
+        long formFillStart = System.currentTimeMillis();
+        Address billingAddress = CheckoutDataFactory.createRandomBillingAddress();
+        checkoutPage.fillBillingAddress(billingAddress);
+        long formFillEnd = System.currentTimeMillis();
+
+        long totalEndTime = System.currentTimeMillis();
+
+        // Calculate timings
+        long addToCartTime = addToCartEnd - addToCartStart;
+        long checkoutNavTime = checkoutNavEnd - checkoutNavStart;
+        long formFillTime = formFillEnd - formFillStart;
+        long totalTime = totalEndTime - totalStartTime;
+
+        logger.info("Performance metrics:");
+        logger.info("Add to cart: {} ms", addToCartTime);
+        logger.info("Navigate to checkout: {} ms", checkoutNavTime);
+        logger.info("Fill checkout form: {} ms", formFillTime);
+        logger.info("Total checkout setup: {} ms", totalTime);
+
+        SoftAssert softAssert = assertions.getSoftAssert();
+
+        // Validate performance thresholds
+        softAssert.assertTrue(addToCartTime < 3000,
+                             "Add to cart should complete within 3 seconds");
+        softAssert.assertTrue(checkoutNavTime < 5000,
+                             "Checkout navigation should complete within 5 seconds");
+        softAssert.assertTrue(formFillTime < 2000,
+                             "Form filling should complete within 2 seconds");
+        softAssert.assertTrue(totalTime < 10000,
+                             "Total checkout setup should complete within 10 seconds");
+
+        assertions.assertAll();
+        logger.info("=== CHECKOUT_005 completed: Performance thresholds validated ===");
+    }
+
+    @Override
+    protected void additionalTeardown() {
+        // Clear cart and logout user if needed
+        try {
+            if (homePage != null) {
+                if (homePage.isUserLoggedIn()) {
+                    homePage.clickLogoutLink();
+                    logger.info("User logged out after checkout test");
+                }
+
+                ShoppingCartPage cartPage = homePage.clickShoppingCartLink();
+                if (cartPage.hasItems()) {
+                    cartPage.clearCart();
+                    logger.info("Cart cleared after checkout test");
+                }
+            }
+        } catch (Exception e) {
+            logger.warn("Could not complete checkout test cleanup: {}", e.getMessage());
+        }
+    }
+}

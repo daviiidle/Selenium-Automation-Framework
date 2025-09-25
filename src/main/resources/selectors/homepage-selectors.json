@@ -137,10 +137,11 @@
       },
       "featured_products": {
         "container": {
-          "primary": ".product-grid",
-          "secondary": "[class*='product-grid']",
-          "xpath": "//div[contains(@class, 'product-grid')]",
-          "stability": "High"
+          "primary": "body",
+          "secondary": ".featured-products, .home-page-product-grid",
+          "xpath": "//body",
+          "stability": "High",
+          "note": "DemoWebShop uses simple layout without explicit product grid container"
         },
         "product_item": {
           "primary": ".item-box",

@@ -513,4 +513,73 @@ public class RegisterPage extends BasePage {
     public String getRegisterPageTitle() {
         return getCurrentTitle();
     }
+
+    /**
+     * Check if server errors are displayed
+     * @return true if server errors are visible
+     */
+    public boolean hasServerErrors() {
+        try {
+            By serverErrorSelector = By.cssSelector(".server-error, .error-message, .validation-summary-errors");
+            return isElementDisplayed(serverErrorSelector);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /**
+     * Check if security errors are displayed
+     * @return true if security errors are visible
+     */
+    public boolean hasSecurityErrors() {
+        try {
+            By securityErrorSelector = By.cssSelector(".security-error, .error-message");
+            return isElementDisplayed(securityErrorSelector) &&
+                   getText(securityErrorSelector).toLowerCase().contains("security");
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /**
+     * Check if email validation error is displayed
+     * @return true if email validation error is visible
+     */
+    public boolean hasEmailValidationError() {
+        try {
+            By emailErrorSelector = By.cssSelector(".field-validation-error[data-valmsg-for='Email'], .validation-summary-errors");
+            return isElementDisplayed(emailErrorSelector);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /**
+     * Check if password validation error is displayed
+     * @return true if password validation error is visible
+     */
+    public boolean hasPasswordValidationError() {
+        try {
+            By passwordErrorSelector = By.cssSelector(".field-validation-error[data-valmsg-for='Password'], .validation-summary-errors");
+            return isElementDisplayed(passwordErrorSelector) &&
+                   getText(passwordErrorSelector).toLowerCase().contains("password");
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /**
+     * Check if field length validation error is displayed
+     * @return true if field length validation error is visible
+     */
+    public boolean hasFieldLengthValidationError() {
+        try {
+            By lengthErrorSelector = By.cssSelector(".field-validation-error, .validation-summary-errors");
+            return isElementDisplayed(lengthErrorSelector) &&
+                   (getText(lengthErrorSelector).toLowerCase().contains("length") ||
+                    getText(lengthErrorSelector).toLowerCase().contains("characters"));
+        } catch (Exception e) {
+            return false;
+        }
+    }
 }

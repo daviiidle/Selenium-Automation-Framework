@@ -26,19 +26,49 @@ public class ElementUtils {
      * @param element Element to click
      */
     public void clickElement(WebElement element) {
-        try {
-            // Try regular click first
-            element.click();
-            logger.debug("Successfully clicked element using regular click");
-        } catch (ElementClickInterceptedException e) {
-            logger.warn("Regular click intercepted, trying JavaScript click");
-            clickElementWithJavaScript(element);
-        } catch (StaleElementReferenceException e) {
-            logger.error("Element is stale, cannot click: {}", e.getMessage());
-            throw e;
-        } catch (Exception e) {
-            logger.warn("Regular click failed, trying JavaScript click: {}", e.getMessage());
-            clickElementWithJavaScript(element);
+        int maxRetries = 3;
+        for (int attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+                // Try regular click first
+                element.click();
+                logger.debug("Successfully clicked element using regular click");
+                return; // Success, exit the retry loop
+            } catch (StaleElementReferenceException e) {
+                if (attempt == maxRetries) {
+                    logger.error("Element remained stale after {} attempts", maxRetries);
+                    throw new RuntimeException("Element is stale and could not be clicked after multiple attempts", e);
+                }
+                logger.warn("Element is stale, retrying ({}/{})", attempt, maxRetries);
+                // Wait a bit before retry to allow page to stabilize
+                try {
+                    Thread.sleep(500);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    throw new RuntimeException("Interrupted during stale element retry", ie);
+                }
+            } catch (ElementClickInterceptedException e) {
+                logger.warn("Regular click intercepted, trying JavaScript click");
+                try {
+                    clickElementWithJavaScript(element);
+                    return; // Success with JavaScript click
+                } catch (Exception jsException) {
+                    if (attempt == maxRetries) {
+                        throw new RuntimeException("Failed to click element with both regular and JavaScript methods", e);
+                    }
+                    logger.warn("JavaScript click also failed, retrying ({}/{})", attempt, maxRetries);
+                }
+            } catch (Exception e) {
+                logger.warn("Regular click failed (attempt {}/{}), trying JavaScript click: {}", attempt, maxRetries, e.getMessage());
+                try {
+                    clickElementWithJavaScript(element);
+                    return; // Success with JavaScript click
+                } catch (Exception jsException) {
+                    if (attempt == maxRetries) {
+                        throw new RuntimeException("Failed to click element with both regular and JavaScript methods after " + maxRetries + " attempts", e);
+                    }
+                    logger.warn("JavaScript click also failed, retrying ({}/{})", attempt, maxRetries);
+                }
+            }
         }
     }
 

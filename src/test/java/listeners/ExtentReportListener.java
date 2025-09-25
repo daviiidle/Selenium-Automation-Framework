@@ -8,8 +8,8 @@ import com.aventstack.extentreports.reporter.configuration.Theme;
 import config.ConfigurationManager;
 import org.testng.ITestListener;
 import org.testng.ITestResult;
-import utils.ScreenshotUtils;
-import drivers.WebDriverFactory;
+import com.demowebshop.automation.utils.reporting.ScreenshotUtils;
+import com.demowebshop.automation.factories.driver.WebDriverFactory;
 
 import java.io.File;
 
@@ -69,7 +69,7 @@ public class ExtentReportListener implements ITestListener {
 
         // Capture screenshot on failure
         try {
-            String screenshotPath = ScreenshotUtils.captureScreenshot(
+            String screenshotPath = ScreenshotUtils.takeScreenshot(
                 WebDriverFactory.getDriver(),
                 result.getMethod().getMethodName() + "_failed"
             );

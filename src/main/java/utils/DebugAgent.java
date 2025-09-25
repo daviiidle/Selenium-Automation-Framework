@@ -1,5 +1,6 @@
 package utils;
 
+import com.demowebshop.automation.utils.reporting.ScreenshotUtils;
 import config.ConfigurationManager;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -328,7 +329,7 @@ public class DebugAgent {
                 logger.error("Failed to recover element '{}' using fallback strategies", elementName, e);
 
                 // Take screenshot for debugging
-                ScreenshotUtils.captureScreenshot(driver, "element_recovery_failed_" + elementName);
+                ScreenshotUtils.takeScreenshot(driver, "element_recovery_failed_" + elementName);
 
                 // Perform DOM analysis for future improvements
                 DOMAnalyzer domAnalyzer = new DOMAnalyzer(driver);
