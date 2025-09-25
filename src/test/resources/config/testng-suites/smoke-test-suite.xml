@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd">
+<suite name="DemoWebShop_Smoke_Suite" parallel="methods" thread-count="3">
+    <parameter name="browser" value="chrome"/>
+    <parameter name="environment" value="demo"/>
+    <parameter name="headless" value="false"/>
+
+    <listeners>
+        <listener class-name="com.demowebshop.automation.listeners.TestListener"/>
+        <listener class-name="com.demowebshop.automation.listeners.ExtentReportListener"/>
+        <listener class-name="io.qameta.allure.testng.AllureTestNg"/>
+    </listeners>
+
+    <test name="Authentication_Smoke_Tests">
+        <parameter name="test.type" value="smoke"/>
+        <classes>
+            <class name="com.demowebshop.automation.tests.authentication.LoginTest">
+                <methods>
+                    <include name="testValidLogin"/>
+                    <include name="testLogout"/>
+                </methods>
+            </class>
+            <class name="com.demowebshop.automation.tests.authentication.RegistrationTest">
+                <methods>
+                    <include name="testValidRegistration"/>
+                </methods>
+            </class>
+        </classes>
+    </test>
+
+    <test name="Product_Smoke_Tests">
+        <parameter name="test.type" value="smoke"/>
+        <classes>
+            <class name="com.demowebshop.automation.tests.product.ProductBrowsingTest">
+                <methods>
+                    <include name="testProductCatalogNavigation"/>
+                    <include name="testProductSearch"/>
+                </methods>
+            </class>
+        </classes>
+    </test>
+
+    <test name="Cart_Smoke_Tests">
+        <parameter name="test.type" value="smoke"/>
+        <classes>
+            <class name="com.demowebshop.automation.tests.cart.ShoppingCartTest">
+                <methods>
+                    <include name="testAddToCart"/>
+                    <include name="testCartQuantityUpdate"/>
+                </methods>
+            </class>
+        </classes>
+    </test>
+</suite>

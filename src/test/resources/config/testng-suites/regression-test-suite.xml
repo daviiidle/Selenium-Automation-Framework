@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd">
+<suite name="DemoWebShop_Regression_Suite" parallel="classes" thread-count="4">
+    <parameter name="browser" value="chrome"/>
+    <parameter name="environment" value="demo"/>
+    <parameter name="headless" value="false"/>
+
+    <listeners>
+        <listener class-name="com.demowebshop.automation.listeners.TestListener"/>
+        <listener class-name="com.demowebshop.automation.listeners.ExtentReportListener"/>
+        <listener class-name="io.qameta.allure.testng.AllureTestNg"/>
+    </listeners>
+
+    <test name="Authentication_Tests">
+        <parameter name="test.type" value="regression"/>
+        <packages>
+            <package name="com.demowebshop.automation.tests.authentication"/>
+        </packages>
+    </test>
+
+    <test name="Product_Tests">
+        <parameter name="test.type" value="regression"/>
+        <packages>
+            <package name="com.demowebshop.automation.tests.product"/>
+        </packages>
+    </test>
+
+    <test name="Cart_Tests">
+        <parameter name="test.type" value="regression"/>
+        <packages>
+            <package name="com.demowebshop.automation.tests.cart"/>
+        </packages>
+    </test>
+
+    <test name="Checkout_Tests">
+        <parameter name="test.type" value="regression"/>
+        <packages>
+            <package name="com.demowebshop.automation.tests.checkout"/>
+        </packages>
+    </test>
+
+    <test name="Account_Tests">
+        <parameter name="test.type" value="regression"/>
+        <packages>
+            <package name="com.demowebshop.automation.tests.account"/>
+        </packages>
+    </test>
+</suite>

@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN">
+    <Properties>
+        <Property name="LOG_PATTERN">%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n</Property>
+        <Property name="APP_LOG_ROOT">logs</Property>
+    </Properties>
+
+    <Appenders>
+        <!-- Console Appender -->
+        <Console name="Console" target="SYSTEM_OUT">
+            <PatternLayout pattern="${LOG_PATTERN}"/>
+            <ThresholdFilter level="DEBUG" onMatch="ACCEPT" onMismatch="DENY"/>
+        </Console>
+
+        <!-- Framework Log File -->
+        <RollingFile name="FrameworkLog" fileName="${APP_LOG_ROOT}/framework.log"
+                     filePattern="${APP_LOG_ROOT}/framework.%i.log.gz">
+            <PatternLayout pattern="${LOG_PATTERN}"/>
+            <Policies>
+                <SizeBasedTriggeringPolicy size="10MB"/>
+            </Policies>
+            <DefaultRolloverStrategy max="10"/>
+        </RollingFile>
+
+        <!-- Test Results Log -->
+        <RollingFile name="TestResultsLog" fileName="${APP_LOG_ROOT}/test-results.log"
+                     filePattern="${APP_LOG_ROOT}/test-results.%i.log.gz">
+            <PatternLayout pattern="${LOG_PATTERN}"/>
+            <Policies>
+                <SizeBasedTriggeringPolicy size="5MB"/>
+            </Policies>
+            <DefaultRolloverStrategy max="5"/>
+        </RollingFile>
+
+        <!-- WebDriver Log -->
+        <RollingFile name="WebDriverLog" fileName="${APP_LOG_ROOT}/webdriver.log"
+                     filePattern="${APP_LOG_ROOT}/webdriver.%i.log.gz">
+            <PatternLayout pattern="${LOG_PATTERN}"/>
+            <Policies>
+                <SizeBasedTriggeringPolicy size="5MB"/>
+            </Policies>
+            <DefaultRolloverStrategy max="5"/>
+        </RollingFile>
+    </Appenders>
+
+    <Loggers>
+        <!-- Framework Loggers -->
+        <Logger name="com.demowebshop.automation" level="DEBUG" additivity="false">
+            <AppenderRef ref="Console"/>
+            <AppenderRef ref="FrameworkLog"/>
+        </Logger>
+
+        <!-- Test Results Logger -->
+        <Logger name="TestResults" level="INFO" additivity="false">
+            <AppenderRef ref="Console"/>
+            <AppenderRef ref="TestResultsLog"/>
+        </Logger>
+
+        <!-- WebDriver Logger -->
+        <Logger name="WebDriver" level="DEBUG" additivity="false">
+            <AppenderRef ref="Console"/>
+            <AppenderRef ref="WebDriverLog"/>
+        </Logger>
+
+        <!-- Selenium Loggers - Reduced verbosity -->
+        <Logger name="org.openqa.selenium" level="WARN" additivity="false">
+            <AppenderRef ref="WebDriverLog"/>
+        </Logger>
+
+        <Logger name="io.github.bonigarcia" level="INFO" additivity="false">
+            <AppenderRef ref="WebDriverLog"/>
+        </Logger>
+
+        <!-- Root Logger -->
+        <Root level="INFO">
+            <AppenderRef ref="Console"/>
+            <AppenderRef ref="FrameworkLog"/>
+        </Root>
+    </Loggers>
+</Configuration>

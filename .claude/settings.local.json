@@ -8,7 +8,12 @@
       "Bash(echo $JAVA_HOME)",
       "Bash(find:*)",
       "Bash(wget:*)",
-      "Bash(sudo apt-key:*)"
+      "Bash(sudo apt-key:*)",
+      "WebFetch(domain:demowebshop.tricentis.com)",
+      "Bash(mvn test-compile:*)",
+      "Read(//mnt/c/Users/D/**)",
+      "Bash(java:*)",
+      "WebFetch(domain:mvnrepository.com)"
     ],
     "deny": [],
     "ask": []

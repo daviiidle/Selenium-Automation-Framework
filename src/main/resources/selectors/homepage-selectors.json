@@ -1,0 +1,268 @@
+{
+  "homepage": {
+    "header": {
+      "logo": {
+        "primary": "a[href='/']",
+        "secondary": ".header-logo a",
+        "xpath": "//a[@href='/']//img[@alt='Tricentis Demo Web Shop']",
+        "stability": "High"
+      },
+      "search_bar": {
+        "primary": "#small-searchterms",
+        "secondary": "input[name='q']",
+        "xpath": "//input[@id='small-searchterms']",
+        "stability": "High"
+      },
+      "search_button": {
+        "primary": "input[type='submit'][value='Search']",
+        "secondary": ".search-box input[type='submit']",
+        "xpath": "//input[@type='submit' and @value='Search']",
+        "stability": "Medium"
+      },
+      "register_link": {
+        "primary": "a[href='/register']",
+        "secondary": ".header-links a:contains('Register')",
+        "xpath": "//a[@href='/register']",
+        "stability": "High"
+      },
+      "login_link": {
+        "primary": "a[href='/login']",
+        "secondary": ".header-links a:contains('Log in')",
+        "xpath": "//a[@href='/login']",
+        "stability": "High"
+      },
+      "cart_link": {
+        "primary": "a[href='/cart']",
+        "secondary": ".header-links .cart-label",
+        "xpath": "//a[@href='/cart']",
+        "stability": "High"
+      },
+      "cart_quantity": {
+        "primary": ".header-links .cart-qty",
+        "secondary": "span[class*='cart-qty']",
+        "xpath": "//span[contains(@class, 'cart-qty')]",
+        "stability": "Medium"
+      },
+      "wishlist_link": {
+        "primary": "a[href='/wishlist']",
+        "secondary": ".header-links .wishlist-label",
+        "xpath": "//a[@href='/wishlist']",
+        "stability": "High"
+      }
+    },
+    "navigation": {
+      "books_menu": {
+        "primary": "a[href='/books']",
+        "secondary": ".top-menu a:contains('Books')",
+        "xpath": "//a[@href='/books']",
+        "stability": "High"
+      },
+      "computers_menu": {
+        "primary": "a[href='/computers']",
+        "secondary": ".top-menu a:contains('Computers')",
+        "xpath": "//a[@href='/computers']",
+        "stability": "High"
+      },
+      "computers_dropdown": {
+        "desktops": {
+          "primary": "a[href='/desktops']",
+          "secondary": ".top-menu .sublist a:contains('Desktops')",
+          "xpath": "//a[@href='/desktops']",
+          "stability": "High"
+        },
+        "notebooks": {
+          "primary": "a[href='/notebooks']",
+          "secondary": ".top-menu .sublist a:contains('Notebooks')",
+          "xpath": "//a[@href='/notebooks']",
+          "stability": "High"
+        },
+        "accessories": {
+          "primary": "a[href='/accessories']",
+          "secondary": ".top-menu .sublist a:contains('Accessories')",
+          "xpath": "//a[@href='/accessories']",
+          "stability": "High"
+        }
+      },
+      "electronics_menu": {
+        "primary": "a[href='/electronics']",
+        "secondary": ".top-menu a:contains('Electronics')",
+        "xpath": "//a[@href='/electronics']",
+        "stability": "High"
+      },
+      "electronics_dropdown": {
+        "camera_photo": {
+          "primary": "a[href='/camera-photo']",
+          "secondary": ".top-menu .sublist a:contains('Camera, photo')",
+          "xpath": "//a[@href='/camera-photo']",
+          "stability": "High"
+        },
+        "cell_phones": {
+          "primary": "a[href='/cell-phones']",
+          "secondary": ".top-menu .sublist a:contains('Cell phones')",
+          "xpath": "//a[@href='/cell-phones']",
+          "stability": "High"
+        }
+      },
+      "apparel_shoes_menu": {
+        "primary": "a[href='/apparel-shoes']",
+        "secondary": ".top-menu a:contains('Apparel & Shoes')",
+        "xpath": "//a[@href='/apparel-shoes']",
+        "stability": "High"
+      },
+      "digital_downloads_menu": {
+        "primary": "a[href='/digital-downloads']",
+        "secondary": ".top-menu a:contains('Digital downloads')",
+        "xpath": "//a[@href='/digital-downloads']",
+        "stability": "High"
+      },
+      "jewelry_menu": {
+        "primary": "a[href='/jewelry']",
+        "secondary": ".top-menu a:contains('Jewelry')",
+        "xpath": "//a[@href='/jewelry']",
+        "stability": "High"
+      },
+      "gift_cards_menu": {
+        "primary": "a[href='/gift-cards']",
+        "secondary": ".top-menu a:contains('Gift Cards')",
+        "xpath": "//a[@href='/gift-cards']",
+        "stability": "High"
+      }
+    },
+    "main_content": {
+      "welcome_message": {
+        "primary": ".topic-html-content",
+        "secondary": "[class*='topic-html']",
+        "xpath": "//div[contains(@class, 'topic-html-content')]",
+        "stability": "Medium"
+      },
+      "featured_products": {
+        "container": {
+          "primary": ".product-grid",
+          "secondary": "[class*='product-grid']",
+          "xpath": "//div[contains(@class, 'product-grid')]",
+          "stability": "High"
+        },
+        "product_item": {
+          "primary": ".item-box",
+          "secondary": "[class*='item-box']",
+          "xpath": "//div[contains(@class, 'item-box')]",
+          "stability": "High"
+        },
+        "product_title": {
+          "primary": ".product-title a",
+          "secondary": "[class*='product-title'] a",
+          "xpath": "//div[contains(@class, 'product-title')]//a",
+          "stability": "High"
+        },
+        "product_price": {
+          "primary": ".price",
+          "secondary": "[class*='price']",
+          "xpath": "//span[contains(@class, 'price')]",
+          "stability": "High"
+        }
+      },
+      "newsletter": {
+        "email_input": {
+          "primary": "#newsletter-email",
+          "secondary": "input[name='NewsletterEmail']",
+          "xpath": "//input[@id='newsletter-email']",
+          "stability": "High"
+        },
+        "subscribe_button": {
+          "primary": "#newsletter-subscribe-button",
+          "secondary": "input[value='Subscribe']",
+          "xpath": "//input[@id='newsletter-subscribe-button']",
+          "stability": "High"
+        }
+      },
+      "poll": {
+        "container": {
+          "primary": ".poll",
+          "secondary": "[class*='poll']",
+          "xpath": "//div[contains(@class, 'poll')]",
+          "stability": "Medium"
+        },
+        "vote_button": {
+          "primary": "#vote-poll-1",
+          "secondary": "input[name='pollanswers']",
+          "xpath": "//input[@id='vote-poll-1']",
+          "stability": "Medium"
+        }
+      }
+    },
+    "sidebar": {
+      "categories": {
+        "container": {
+          "primary": ".block-category-navigation",
+          "secondary": "[class*='category-navigation']",
+          "xpath": "//div[contains(@class, 'block-category-navigation')]",
+          "stability": "High"
+        },
+        "category_link": {
+          "primary": ".category-navigation a",
+          "secondary": "[class*='category-navigation'] a",
+          "xpath": "//div[contains(@class, 'category-navigation')]//a",
+          "stability": "High"
+        }
+      },
+      "manufacturers": {
+        "container": {
+          "primary": ".block-manufacturer-navigation",
+          "secondary": "[class*='manufacturer-navigation']",
+          "xpath": "//div[contains(@class, 'block-manufacturer-navigation')]",
+          "stability": "Medium"
+        }
+      },
+      "tags": {
+        "container": {
+          "primary": ".tags",
+          "secondary": "[class*='tags']",
+          "xpath": "//div[contains(@class, 'tags')]",
+          "stability": "Medium"
+        }
+      }
+    },
+    "footer": {
+      "information_links": {
+        "primary": ".footer .column:first-child a",
+        "secondary": ".footer [class*='information'] a",
+        "xpath": "//div[@class='footer']//a[contains(@href, '/')]",
+        "stability": "Medium"
+      },
+      "customer_service_links": {
+        "primary": ".footer .column:nth-child(2) a",
+        "secondary": ".footer [class*='customer-service'] a",
+        "xpath": "//div[@class='footer']//a[contains(@href, '/customer')]",
+        "stability": "Medium"
+      },
+      "social_media": {
+        "facebook": {
+          "primary": "a[href*='facebook']",
+          "secondary": "[class*='facebook'] a",
+          "xpath": "//a[contains(@href, 'facebook')]",
+          "stability": "Low"
+        },
+        "twitter": {
+          "primary": "a[href*='twitter']",
+          "secondary": "[class*='twitter'] a",
+          "xpath": "//a[contains(@href, 'twitter')]",
+          "stability": "Low"
+        }
+      }
+    }
+  },
+  "notes": {
+    "selector_stability": {
+      "High": "Stable selectors using IDs or semantic attributes, unlikely to change",
+      "Medium": "Class-based selectors that may change with styling updates",
+      "Low": "Brittle selectors that may break with UI changes"
+    },
+    "automation_recommendations": [
+      "Prefer ID-based selectors when available",
+      "Use data attributes if the application supports them",
+      "Implement fallback selector strategies",
+      "Test selectors across different browser environments",
+      "Monitor for selector changes during application updates"
+    ]
+  }
+}

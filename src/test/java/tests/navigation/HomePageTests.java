@@ -3,7 +3,7 @@ package tests.navigation;
 import base.BaseTest;
 import org.testng.Assert;
 import org.testng.annotations.Test;
-import pages.ProductCatalogPage;
+import com.demowebshop.automation.pages.ProductCatalogPage;
 
 public class HomePageTests extends BaseTest {
 

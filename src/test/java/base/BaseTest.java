@@ -6,7 +6,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.openqa.selenium.WebDriver;
 import org.testng.annotations.*;
-import pages.HomePage;
+import com.demowebshop.automation.pages.HomePage;
 import utils.ScreenshotUtils;
 
 import java.lang.reflect.Method;
@@ -40,6 +40,9 @@ public abstract class BaseTest {
             homePage.navigateToHomePage();
             logger.info("Navigated to homepage");
 
+            // Call additional setup hook for test classes
+            additionalSetup();
+
             logger.info("Test setup completed for: {}", method.getName());
         } catch (Exception e) {
             logger.error("Error during test setup for: {}", method.getName(), e);
@@ -52,6 +55,9 @@ public abstract class BaseTest {
         logger.info("Cleaning up test: {}.{}", this.getClass().getSimpleName(), method.getName());
 
         try {
+            // Call additional teardown hook for test classes
+            additionalTeardown();
+
             if (driver != null) {
                 // Take screenshot on failure
                 if (!isTestPassed()) {
@@ -100,5 +106,67 @@ public abstract class BaseTest {
     private boolean isTestPassed() {
         // This will be handled by TestNG listeners
         return true;
+    }
+
+    /**
+     * Get the base URL from configuration
+     * @return Base URL
+     */
+    protected String getBaseUrl() {
+        return config.getBaseUrl();
+    }
+
+    /**
+     * Wait for a specified number of seconds
+     * @param seconds Seconds to wait
+     */
+    protected void waitInSeconds(int seconds) {
+        try {
+            Thread.sleep(seconds * 1000);
+            logger.debug("Waited for {} seconds", seconds);
+        } catch (InterruptedException e) {
+            logger.warn("Wait interrupted: {}", e.getMessage());
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    /**
+     * Navigate to a specific path relative to base URL
+     * @param path Relative path to navigate to
+     */
+    protected void navigateToPath(String path) {
+        String fullUrl = getBaseUrl() + path;
+        logger.info("Navigating to: {}", fullUrl);
+        driver.get(fullUrl);
+    }
+
+    /**
+     * Verify current page URL contains expected path
+     * @param expectedPath Expected path in URL
+     * @return true if URL contains expected path
+     */
+    protected boolean isOnPage(String expectedPath) {
+        String currentUrl = driver.getCurrentUrl();
+        boolean isOnPage = currentUrl.contains(expectedPath);
+        logger.debug("Current URL: {}, Expected path: {}, IsOnPage: {}", currentUrl, expectedPath, isOnPage);
+        return isOnPage;
+    }
+
+    /**
+     * Hook method for test classes to perform additional setup
+     * Override this method in test classes to add custom setup logic
+     */
+    protected void additionalSetup() {
+        // Override in test classes if additional setup is needed
+        logger.debug("Running additionalSetup hook");
+    }
+
+    /**
+     * Hook method for test classes to perform additional teardown
+     * Override this method in test classes to add custom teardown logic
+     */
+    protected void additionalTeardown() {
+        // Override in test classes if additional teardown is needed
+        logger.debug("Running additionalTeardown hook");
     }
 }
