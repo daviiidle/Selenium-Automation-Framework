@@ -5,9 +5,17 @@ import org.apache.logging.log4j.Logger;
 import org.openqa.selenium.*;
 import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.support.ui.Select;
+import com.codeborne.selenide.SelenideElement;
+import com.codeborne.selenide.ElementsCollection;
+import com.codeborne.selenide.Condition;
+
+import static com.codeborne.selenide.Selenide.$;
+import static com.codeborne.selenide.Selenide.$$;
 
 /**
  * Utility class for enhanced WebElement interactions
+ * Migrated to prioritize Selenide for improved reliability and cleaner syntax
+ * Legacy Selenium WebDriver methods available for backward compatibility
  */
 public class ElementUtils {
     private static final Logger logger = LogManager.getLogger(ElementUtils.class);
@@ -521,6 +529,250 @@ public class ElementUtils {
         } catch (Exception e) {
             logger.debug("Element not selected or not found: {}", e.getMessage());
             return false;
+        }
+    }
+
+    // ==================== SELENIDE ENHANCED METHODS ====================
+
+    /**
+     * Click element using Selenide (more reliable with built-in waits)
+     * @param selector CSS selector
+     */
+    public void clickElementSelenide(String selector) {
+        try {
+            $(selector).click();
+            logger.debug("Successfully clicked element using Selenide: {}", selector);
+        } catch (Exception e) {
+            logger.error("Selenide click failed for selector: {}: {}", selector, e.getMessage());
+            throw e;
+        }
+    }
+
+    /**
+     * Click element using Selenide with By locator
+     * @param locator By locator
+     */
+    public void clickElementSelenide(By locator) {
+        try {
+            $(locator).click();
+            logger.debug("Successfully clicked element using Selenide: {}", locator);
+        } catch (Exception e) {
+            logger.error("Selenide click failed for locator: {}: {}", locator, e.getMessage());
+            throw e;
+        }
+    }
+
+    /**
+     * Type text using Selenide (handles clearing automatically)
+     * @param selector CSS selector
+     * @param text Text to type
+     */
+    public void typeSelenide(String selector, String text) {
+        try {
+            $(selector).setValue(text);
+            logger.debug("Successfully typed text using Selenide: {}", text);
+        } catch (Exception e) {
+            logger.error("Selenide type failed for selector: {}: {}", selector, e.getMessage());
+            throw e;
+        }
+    }
+
+    /**
+     * Type text using Selenide with By locator
+     * @param locator By locator
+     * @param text Text to type
+     */
+    public void typeSelenide(By locator, String text) {
+        try {
+            $(locator).setValue(text);
+            logger.debug("Successfully typed text using Selenide: {}", text);
+        } catch (Exception e) {
+            logger.error("Selenide type failed for locator: {}: {}", locator, e.getMessage());
+            throw e;
+        }
+    }
+
+    /**
+     * Get text using Selenide
+     * @param selector CSS selector
+     * @return Element text
+     */
+    public String getTextSelenide(String selector) {
+        try {
+            String text = $(selector).getText();
+            logger.debug("Successfully got text using Selenide: {}", text);
+            return text;
+        } catch (Exception e) {
+            logger.error("Selenide getText failed for selector: {}: {}", selector, e.getMessage());
+            return "";
+        }
+    }
+
+    /**
+     * Get text using Selenide with By locator
+     * @param locator By locator
+     * @return Element text
+     */
+    public String getTextSelenide(By locator) {
+        try {
+            String text = $(locator).getText();
+            logger.debug("Successfully got text using Selenide: {}", text);
+            return text;
+        } catch (Exception e) {
+            logger.error("Selenide getText failed for locator: {}: {}", locator, e.getMessage());
+            return "";
+        }
+    }
+
+    /**
+     * Check if element is visible using Selenide
+     * @param selector CSS selector
+     * @return true if element is visible
+     */
+    public boolean isVisibleSelenide(String selector) {
+        try {
+            return $(selector).isDisplayed();
+        } catch (Exception e) {
+            logger.debug("Element not visible using Selenide: {}", selector);
+            return false;
+        }
+    }
+
+    /**
+     * Check if element is visible using Selenide with By locator
+     * @param locator By locator
+     * @return true if element is visible
+     */
+    public boolean isVisibleSelenide(By locator) {
+        try {
+            return $(locator).isDisplayed();
+        } catch (Exception e) {
+            logger.debug("Element not visible using Selenide: {}", locator);
+            return false;
+        }
+    }
+
+    /**
+     * Wait for element to be visible using Selenide conditions
+     * @param selector CSS selector
+     * @return SelenideElement
+     */
+    public SelenideElement waitForVisibleSelenide(String selector) {
+        try {
+            SelenideElement element = $(selector).shouldBe(Condition.visible);
+            logger.debug("Element is now visible using Selenide: {}", selector);
+            return element;
+        } catch (Exception e) {
+            logger.error("Element did not become visible using Selenide: {}: {}", selector, e.getMessage());
+            throw e;
+        }
+    }
+
+    /**
+     * Wait for element to be clickable using Selenide conditions
+     * @param selector CSS selector
+     * @return SelenideElement
+     */
+    public SelenideElement waitForClickableSelenide(String selector) {
+        try {
+            SelenideElement element = $(selector).shouldBe(Condition.enabled).shouldBe(Condition.visible);
+            logger.debug("Element is now clickable using Selenide: {}", selector);
+            return element;
+        } catch (Exception e) {
+            logger.error("Element did not become clickable using Selenide: {}: {}", selector, e.getMessage());
+            throw e;
+        }
+    }
+
+    /**
+     * Select dropdown option using Selenide
+     * @param selector CSS selector of dropdown
+     * @param optionText Option text to select
+     */
+    public void selectOptionSelenide(String selector, String optionText) {
+        try {
+            $(selector).selectOptionContainingText(optionText);
+            logger.debug("Successfully selected option using Selenide: {}", optionText);
+        } catch (Exception e) {
+            logger.error("Selenide select option failed: {}", e.getMessage());
+            throw e;
+        }
+    }
+
+    /**
+     * Hover over element using Selenide
+     * @param selector CSS selector
+     */
+    public void hoverSelenide(String selector) {
+        try {
+            $(selector).hover();
+            logger.debug("Successfully hovered using Selenide: {}", selector);
+        } catch (Exception e) {
+            logger.error("Selenide hover failed: {}", e.getMessage());
+            throw e;
+        }
+    }
+
+    /**
+     * Clear element using Selenide
+     * @param selector CSS selector
+     */
+    public void clearSelenide(String selector) {
+        try {
+            $(selector).clear();
+            logger.debug("Successfully cleared element using Selenide: {}", selector);
+        } catch (Exception e) {
+            logger.error("Selenide clear failed: {}", e.getMessage());
+            throw e;
+        }
+    }
+
+    /**
+     * Get all elements matching selector using Selenide
+     * @param selector CSS selector
+     * @return ElementsCollection
+     */
+    public ElementsCollection getAllElementsSelenide(String selector) {
+        try {
+            ElementsCollection elements = $$(selector);
+            logger.debug("Found {} elements using Selenide: {}", elements.size(), selector);
+            return elements;
+        } catch (Exception e) {
+            logger.error("Failed to get elements using Selenide: {}", e.getMessage());
+            throw e;
+        }
+    }
+
+    /**
+     * Check if element has specific text using Selenide
+     * @param selector CSS selector
+     * @param expectedText Expected text
+     * @return true if element contains expected text
+     */
+    public boolean hasTextSelenide(String selector, String expectedText) {
+        try {
+            $(selector).shouldHave(Condition.text(expectedText));
+            return true;
+        } catch (Exception e) {
+            logger.debug("Element does not have expected text using Selenide: {}", expectedText);
+            return false;
+        }
+    }
+
+    /**
+     * Get element attribute using Selenide
+     * @param selector CSS selector
+     * @param attributeName Attribute name
+     * @return Attribute value
+     */
+    public String getAttributeSelenide(String selector, String attributeName) {
+        try {
+            String value = $(selector).getAttribute(attributeName);
+            logger.debug("Got attribute '{}' value '{}' using Selenide", attributeName, value);
+            return value != null ? value : "";
+        } catch (Exception e) {
+            logger.error("Failed to get attribute using Selenide: {}", e.getMessage());
+            return "";
         }
     }
 }

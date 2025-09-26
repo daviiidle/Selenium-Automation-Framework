@@ -5,6 +5,8 @@ import com.demowebshop.automation.utils.data.SelectorUtils;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
+import com.codeborne.selenide.SelenideElement;
+import com.codeborne.selenide.ElementsCollection;
 import org.openqa.selenium.support.ui.Select;
 
 import java.math.BigDecimal;
@@ -13,6 +15,9 @@ import java.text.ParseException;
 import java.util.List;
 import java.util.Locale;
 import java.util.stream.Collectors;
+
+import static com.codeborne.selenide.Selenide.$;
+import static com.codeborne.selenide.Selenide.$$;
 
 /**
  * Page Object Model for Checkout Process
@@ -98,7 +103,7 @@ public class CheckoutPage extends BasePage {
     public CheckoutPage selectExistingBillingAddress(String addressId) {
         try {
             By addressSelectSelector = SelectorUtils.getCartSelector("cart_and_checkout.checkout_process.billing_address.new_address_option");
-            Select addressSelect = new Select(findElement(addressSelectSelector));
+            Select addressSelect = new Select($(addressSelectSelector).toWebElement());
             addressSelect.selectByValue(addressId);
             logger.info("Selected existing billing address: {}", addressId);
         } catch (Exception e) {
@@ -239,7 +244,7 @@ public class CheckoutPage extends BasePage {
     public CheckoutPage setShipToSameAddress(boolean sameAddress) {
         try {
             By sameAddressSelector = SelectorUtils.getCartSelector("cart_and_checkout.checkout_process.shipping_address.same_as_billing");
-            WebElement checkbox = findElement(sameAddressSelector);
+            SelenideElement checkbox = $(sameAddressSelector);
 
             if (checkbox.isSelected() != sameAddress) {
                 click(checkbox);
@@ -451,10 +456,10 @@ public class CheckoutPage extends BasePage {
     public List<OrderItem> getOrderItems() {
         try {
             By orderItemsSelector = SelectorUtils.getCartSelector("cart_and_checkout.checkout_process.order_confirmation.order_items");
-            WebElement orderTable = findElement(orderItemsSelector);
+            SelenideElement orderTable = $(orderItemsSelector);
 
             // Find all item rows in the table
-            List<WebElement> itemRows = orderTable.findElements(By.tagName("tr"));
+            ElementsCollection itemRows = orderTable.findAll(By.tagName("tr"));
 
             return itemRows.stream()
                     .skip(1) // Skip header row
@@ -750,9 +755,9 @@ public class CheckoutPage extends BasePage {
      * Class representing an order item in the confirmation summary
      */
     public static class OrderItem {
-        private final WebElement itemRow;
+        private final SelenideElement itemRow;
 
-        public OrderItem(WebElement itemRow) {
+        public OrderItem(SelenideElement itemRow) {
             this.itemRow = itemRow;
         }
 
@@ -762,7 +767,7 @@ public class CheckoutPage extends BasePage {
          */
         public String getProductName() {
             try {
-                List<WebElement> cells = itemRow.findElements(By.tagName("td"));
+                ElementsCollection cells = itemRow.findAll(By.tagName("td"));
                 return cells.get(0).getText(); // Assuming first column is product name
             } catch (Exception e) {
                 return "";
@@ -775,7 +780,7 @@ public class CheckoutPage extends BasePage {
          */
         public int getQuantity() {
             try {
-                List<WebElement> cells = itemRow.findElements(By.tagName("td"));
+                ElementsCollection cells = itemRow.findAll(By.tagName("td"));
                 String qtyText = cells.get(1).getText(); // Assuming second column is quantity
                 return Integer.parseInt(qtyText.replaceAll("[^0-9]", ""));
             } catch (Exception e) {
@@ -789,7 +794,7 @@ public class CheckoutPage extends BasePage {
          */
         public String getPrice() {
             try {
-                List<WebElement> cells = itemRow.findElements(By.tagName("td"));
+                ElementsCollection cells = itemRow.findAll(By.tagName("td"));
                 return cells.get(2).getText(); // Assuming third column is price
             } catch (Exception e) {
                 return "";
@@ -878,7 +883,7 @@ public class CheckoutPage extends BasePage {
     public String getFirstAvailableShippingMethod() {
         try {
             By shippingMethodSelector = By.cssSelector(".shipping-method input[type='radio'], input[name*='shippingoption']");
-            List<WebElement> methods = findElements(shippingMethodSelector);
+            ElementsCollection methods = $$(shippingMethodSelector);
             if (!methods.isEmpty()) {
                 return methods.get(0).getAttribute("value");
             }
@@ -1043,10 +1048,9 @@ public class CheckoutPage extends BasePage {
      */
     public CheckoutPage checkSaveAddress() {
         try {
-            By saveAddressSelector = By.cssSelector("input[name*='SaveAddress']");
-            WebElement checkbox = findElement(saveAddressSelector);
+            SelenideElement checkbox = $("input[name*='SaveAddress']");
             if (!checkbox.isSelected()) {
-                click(saveAddressSelector);
+                checkbox.click();
                 logger.info("Checked save address option");
             }
         } catch (Exception e) {
@@ -1061,8 +1065,7 @@ public class CheckoutPage extends BasePage {
      */
     public boolean isSaveAddressChecked() {
         try {
-            By saveAddressSelector = By.cssSelector("input[name*='SaveAddress']");
-            WebElement checkbox = findElement(saveAddressSelector);
+            SelenideElement checkbox = $("input[name*='SaveAddress']");
             return checkbox.isSelected();
         } catch (Exception e) {
             return false;
@@ -1223,7 +1226,7 @@ public class CheckoutPage extends BasePage {
     public String getFirstAvailablePaymentMethod() {
         try {
             By paymentMethodSelector = By.cssSelector(".payment-method input[type='radio'], input[name*='paymentmethod']");
-            List<WebElement> methods = findElements(paymentMethodSelector);
+            ElementsCollection methods = $$(paymentMethodSelector);
             if (!methods.isEmpty()) {
                 return methods.get(0).getAttribute("value");
             }

@@ -52,7 +52,7 @@ public class ConfigurationManager {
     private void loadDefaultProperties() {
         properties.setProperty("base.url", "https://demowebshop.tricentis.com");
         properties.setProperty("browser", "chrome");
-        properties.setProperty("headless", "false");
+        properties.setProperty("headless", "true");
         properties.setProperty("timeout.implicit", "10");
         properties.setProperty("timeout.explicit", "20");
         properties.setProperty("timeout.page.load", "30");

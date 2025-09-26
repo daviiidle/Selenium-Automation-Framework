@@ -5,10 +5,15 @@ import com.demowebshop.automation.utils.data.SelectorUtils;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
+import com.codeborne.selenide.SelenideElement;
+import com.codeborne.selenide.ElementsCollection;
 import org.openqa.selenium.support.ui.Select;
 
 import java.util.List;
 import java.util.stream.Collectors;
+
+import static com.codeborne.selenide.Selenide.$;
+import static com.codeborne.selenide.Selenide.$$;
 
 /**
  * Page Object Model for Product Category/Catalog Pages
@@ -69,7 +74,7 @@ public class ProductCatalogPage extends BasePage {
     public boolean isGridViewActive() {
         try {
             By gridViewSelector = SelectorUtils.getProductSelector("product_pages.category_listing.layout_controls.view_mode.grid_view");
-            WebElement gridViewElement = findElement(gridViewSelector);
+            SelenideElement gridViewElement = $(gridViewSelector);
             String href = gridViewElement.getAttribute("href");
             return !href.contains("viewmode=grid"); // If link doesn't contain grid, we're already in grid mode
         } catch (Exception e) {
@@ -86,7 +91,7 @@ public class ProductCatalogPage extends BasePage {
      */
     public ProductCatalogPage sortBy(String sortOption) {
         By sortDropdownSelector = SelectorUtils.getProductSelector("product_pages.category_listing.layout_controls.sort_dropdown");
-        WebElement sortDropdown = findElement(sortDropdownSelector);
+        SelenideElement sortDropdown = $(sortDropdownSelector);
         Select select = new Select(sortDropdown);
 
         select.selectByVisibleText(sortOption);
@@ -101,7 +106,7 @@ public class ProductCatalogPage extends BasePage {
      */
     public String getCurrentSortOption() {
         By sortDropdownSelector = SelectorUtils.getProductSelector("product_pages.category_listing.layout_controls.sort_dropdown");
-        WebElement sortDropdown = findElement(sortDropdownSelector);
+        SelenideElement sortDropdown = $(sortDropdownSelector);
         Select select = new Select(sortDropdown);
         return select.getFirstSelectedOption().getText();
     }
@@ -112,7 +117,7 @@ public class ProductCatalogPage extends BasePage {
      */
     public List<String> getAvailableSortOptions() {
         By sortDropdownSelector = SelectorUtils.getProductSelector("product_pages.category_listing.layout_controls.sort_dropdown");
-        WebElement sortDropdown = findElement(sortDropdownSelector);
+        SelenideElement sortDropdown = $(sortDropdownSelector);
         Select select = new Select(sortDropdown);
         return select.getOptions().stream()
                 .map(WebElement::getText)
@@ -128,7 +133,7 @@ public class ProductCatalogPage extends BasePage {
      */
     public ProductCatalogPage setPageSize(String pageSize) {
         By pageSizeSelector = SelectorUtils.getProductSelector("product_pages.category_listing.layout_controls.page_size");
-        WebElement pageSizeDropdown = findElement(pageSizeSelector);
+        SelenideElement pageSizeDropdown = $(pageSizeSelector);
         Select select = new Select(pageSizeDropdown);
 
         select.selectByVisibleText(pageSize);
@@ -143,7 +148,7 @@ public class ProductCatalogPage extends BasePage {
      */
     public String getCurrentPageSize() {
         By pageSizeSelector = SelectorUtils.getProductSelector("product_pages.category_listing.layout_controls.page_size");
-        WebElement pageSizeDropdown = findElement(pageSizeSelector);
+        SelenideElement pageSizeDropdown = $(pageSizeSelector);
         Select select = new Select(pageSizeDropdown);
         return select.getFirstSelectedOption().getText();
     }
@@ -194,7 +199,7 @@ public class ProductCatalogPage extends BasePage {
      */
     public List<ProductElement> getProducts() {
         By productItemsSelector = SelectorUtils.getProductSelector("product_pages.category_listing.product_grid.product_item");
-        List<WebElement> productElements = findElements(productItemsSelector);
+        ElementsCollection productElements = $$(productItemsSelector);
 
         return productElements.stream()
                 .map(element -> new ProductElement(element, driver))
@@ -303,11 +308,11 @@ public class ProductCatalogPage extends BasePage {
      */
     public ProductCatalogPage goToPage(int pageNumber) {
         By pageNumbersSelector = SelectorUtils.getProductSelector("product_pages.category_listing.pagination.page_numbers");
-        List<WebElement> pageLinks = findElements(pageNumbersSelector);
+        ElementsCollection pageLinks = $$(pageNumbersSelector);
 
-        for (WebElement pageLink : pageLinks) {
+        for (SelenideElement pageLink : pageLinks) {
             if (pageLink.getText().equals(String.valueOf(pageNumber))) {
-                click(pageLink);
+                pageLink.click();
                 waitForPageToLoad();
                 logger.info("Navigated to page {} in category: {}", pageNumber, categoryName);
                 return this;
@@ -324,10 +329,10 @@ public class ProductCatalogPage extends BasePage {
     public List<Integer> getAvailablePageNumbers() {
         try {
             By pageNumbersSelector = SelectorUtils.getProductSelector("product_pages.category_listing.pagination.page_numbers");
-            List<WebElement> pageLinks = findElements(pageNumbersSelector);
+            ElementsCollection pageLinks = $$(pageNumbersSelector);
 
             return pageLinks.stream()
-                    .map(WebElement::getText)
+                    .map(SelenideElement::getText)
                     .filter(text -> text.matches("\\d+"))
                     .map(Integer::parseInt)
                     .collect(Collectors.toList());
@@ -372,7 +377,7 @@ public class ProductCatalogPage extends BasePage {
         // DemoWebShop uses simple links for products, not complex grid containers
         try {
             By productLinksSelector = By.cssSelector("a[href*='/'], .product-title a, .item-box a");
-            List<WebElement> productLinks = findElements(productLinksSelector);
+            ElementsCollection productLinks = $$(productLinksSelector);
             return productLinks.size() > 0;
         } catch (Exception e) {
             return false;
@@ -399,7 +404,7 @@ public class ProductCatalogPage extends BasePage {
             for (String selector : productSelectors) {
                 try {
                     By productBy = By.cssSelector(selector);
-                    List<WebElement> productItems = findElements(productBy);
+                    ElementsCollection productItems = $$(productBy);
                     if (!productItems.isEmpty()) {
                         // Found products with this selector
                         logger.debug("Found {} products with selector: {}", productItems.size(), selector);
@@ -443,8 +448,7 @@ public class ProductCatalogPage extends BasePage {
      */
     public int getCurrentPageNumber() {
         try {
-            By currentPageSelector = By.cssSelector(".pager .current-page");
-            WebElement currentPageElement = findElement(currentPageSelector);
+            SelenideElement currentPageElement = $(".pager .current-page");
             String pageText = currentPageElement.getText();
             return Integer.parseInt(pageText);
         } catch (Exception e) {
@@ -480,9 +484,9 @@ public class ProductCatalogPage extends BasePage {
     public List<String> getBreadcrumbs() {
         try {
             By breadcrumbSelector = By.cssSelector(".breadcrumb a");
-            List<WebElement> breadcrumbElements = findElements(breadcrumbSelector);
+            ElementsCollection breadcrumbElements = $$(breadcrumbSelector);
             return breadcrumbElements.stream()
-                    .map(WebElement::getText)
+                    .map(SelenideElement::getText)
                     .collect(Collectors.toList());
         } catch (Exception e) {
             return List.of();
@@ -583,7 +587,7 @@ public class ProductCatalogPage extends BasePage {
         List<ProductElement> products = getProducts();
         for (ProductElement product : products) {
             try {
-                WebElement image = product.getElement().findElement(By.tagName("img"));
+                SelenideElement image = product.getElement().$("img");
                 if (!image.isDisplayed()) {
                     return false;
                 }
@@ -614,7 +618,7 @@ public class ProductCatalogPage extends BasePage {
         int imageCount = 0;
         for (ProductElement product : products) {
             try {
-                List<WebElement> images = product.getElement().findElements(By.tagName("img"));
+                ElementsCollection images = product.getElement().findAll(By.tagName("img"));
                 imageCount += images.size();
             } catch (Exception e) {
                 // Continue counting
@@ -631,8 +635,8 @@ public class ProductCatalogPage extends BasePage {
     public ProductCatalogPage selectSortOption(String sortOption) {
         try {
             By sortSelector = By.cssSelector(".sort-dropdown, select[name*='sort']");
-            if (isElementDisplayed(sortSelector)) {
-                WebElement sortDropdown = findElement(sortSelector);
+            SelenideElement sortDropdown = $(sortSelector);
+            if (sortDropdown.isDisplayed()) {
                 org.openqa.selenium.support.ui.Select select = new org.openqa.selenium.support.ui.Select(sortDropdown);
                 select.selectByVisibleText(sortOption);
                 waitForPageToLoad();
@@ -650,8 +654,8 @@ public class ProductCatalogPage extends BasePage {
     public String getSelectedSortOption() {
         try {
             By sortSelector = By.cssSelector(".sort-dropdown, select[name*='sort']");
-            if (isElementDisplayed(sortSelector)) {
-                WebElement sortDropdown = findElement(sortSelector);
+            SelenideElement sortDropdown = $(sortSelector);
+            if (sortDropdown.isDisplayed()) {
                 org.openqa.selenium.support.ui.Select select = new org.openqa.selenium.support.ui.Select(sortDropdown);
                 return select.getFirstSelectedOption().getText();
             }
@@ -891,7 +895,7 @@ public class ProductCatalogPage extends BasePage {
      */
     public boolean areProductLinksClickable() {
         try {
-            List<WebElement> productLinks = findElements(By.cssSelector(".product-item a, .product-title a"));
+            ElementsCollection productLinks = $$(By.cssSelector(".product-item a, .product-title a"));
             return productLinks.stream().allMatch(link -> link.isEnabled() && link.isDisplayed());
         } catch (Exception e) {
             return false;
@@ -900,10 +904,10 @@ public class ProductCatalogPage extends BasePage {
 
     // Inner class for handling individual product elements
     public static class ProductElement {
-        private final WebElement productElement;
+        private final SelenideElement productElement;
         private final WebDriver driver;
 
-        public ProductElement(WebElement productElement, WebDriver driver) {
+        public ProductElement(SelenideElement productElement, WebDriver driver) {
             this.productElement = productElement;
             this.driver = driver;
         }
@@ -914,8 +918,7 @@ public class ProductCatalogPage extends BasePage {
          */
         public String getTitle() {
             try {
-                WebElement titleElement = productElement.findElement(
-                    SelectorUtils.getProductSelector("product_pages.category_listing.product_grid.product_title"));
+                SelenideElement titleElement = productElement.$(SelectorUtils.getProductSelector("product_pages.category_listing.product_grid.product_title"));
                 return titleElement.getText();
             } catch (Exception e) {
                 return "";
@@ -928,8 +931,7 @@ public class ProductCatalogPage extends BasePage {
          */
         public String getPrice() {
             try {
-                WebElement priceElement = productElement.findElement(
-                    SelectorUtils.getProductSelector("product_pages.category_listing.product_grid.product_price"));
+                SelenideElement priceElement = productElement.$(SelectorUtils.getProductSelector("product_pages.category_listing.product_grid.product_price"));
                 return priceElement.getText();
             } catch (Exception e) {
                 return "";
@@ -941,8 +943,7 @@ public class ProductCatalogPage extends BasePage {
          * @return ProductDetailsPage
          */
         public ProductDetailsPage clickTitle() {
-            WebElement titleElement = productElement.findElement(
-                SelectorUtils.getProductSelector("product_pages.category_listing.product_grid.product_title"));
+            SelenideElement titleElement = productElement.$(SelectorUtils.getProductSelector("product_pages.category_listing.product_grid.product_title"));
             titleElement.click();
             return new ProductDetailsPage(driver);
         }
@@ -952,8 +953,7 @@ public class ProductCatalogPage extends BasePage {
          * @return ProductDetailsPage
          */
         public ProductDetailsPage clickImage() {
-            WebElement imageElement = productElement.findElement(
-                SelectorUtils.getProductSelector("product_pages.category_listing.product_grid.product_image"));
+            SelenideElement imageElement = productElement.$(SelectorUtils.getProductSelector("product_pages.category_listing.product_grid.product_image"));
             imageElement.click();
             return new ProductDetailsPage(driver);
         }
@@ -962,7 +962,7 @@ public class ProductCatalogPage extends BasePage {
          * Get the underlying WebElement
          * @return WebElement representing this product
          */
-        public WebElement getElement() {
+        public SelenideElement getElement() {
             return productElement;
         }
 

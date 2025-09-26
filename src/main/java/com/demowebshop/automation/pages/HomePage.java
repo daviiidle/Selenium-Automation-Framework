@@ -5,13 +5,17 @@ import com.demowebshop.automation.utils.data.SelectorUtils;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
-import org.openqa.selenium.support.FindBy;
+import com.codeborne.selenide.SelenideElement;
+import com.codeborne.selenide.ElementsCollection;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static com.codeborne.selenide.Selenide.$;
+import static com.codeborne.selenide.Selenide.$$;
+
 /**
- * Page Object Model for the DemoWebShop Homepage
+ * Page Object Model for the DemoWebShop Homepage - Selenide Migrated
  * Provides methods for navigation, search, featured products, and newsletter signup
  */
 public class HomePage extends BasePage {
@@ -19,15 +23,10 @@ public class HomePage extends BasePage {
     // Page URL patterns
     private static final String PAGE_URL_PATTERN = "https://demowebshop.tricentis.com/";
 
-    // Using @FindBy for static elements, SelectorUtils for dynamic ones
-    @FindBy(css = "a[href='/']")
-    private WebElement logo;
-
-    @FindBy(css = "#small-searchterms")
-    private WebElement searchInput;
-
-    @FindBy(css = "input[type='submit'][value='Search']")
-    private WebElement searchButton;
+    // Selenide elements - no need for @FindBy
+    private final SelenideElement logo = $("a[href='/']");
+    private final SelenideElement searchInput = $("#small-searchterms");
+    private final SelenideElement searchButton = $("input[type='submit'][value='Search']");
 
     public HomePage(WebDriver driver) {
         super(driver);
@@ -199,8 +198,13 @@ public class HomePage extends BasePage {
      * @return ProductSearchPage with results
      */
     public ProductSearchPage performSearch(String searchTerm) {
-        type(searchInput, searchTerm);
-        click(searchButton);
+        searchInput.setValue(searchTerm);
+        searchButton.click();
+
+        // Wait for navigation to search results page
+        waitForUrlToContain("/search");
+        waitForPageToLoad();
+
         logger.info("Performed search for: {}", searchTerm);
         return new ProductSearchPage(driver);
     }
@@ -244,8 +248,8 @@ public class HomePage extends BasePage {
     public ProductCatalogPage navigateToDesktops() {
         // Hover over Computers first to show submenu
         By computersSelector = SelectorUtils.getHomepageSelector("homepage.navigation.computers_menu");
-        WebElement computersMenu = findElement(computersSelector);
-        elementUtils.hoverOverElement(computersMenu);
+        SelenideElement computersMenu = $(computersSelector);
+        computersMenu.hover();
 
         By desktopsSelector = SelectorUtils.getHomepageSelector("homepage.navigation.computers_dropdown.desktops");
         click(desktopsSelector);
@@ -260,8 +264,8 @@ public class HomePage extends BasePage {
     public ProductCatalogPage navigateToNotebooks() {
         // Hover over Computers first to show submenu
         By computersSelector = SelectorUtils.getHomepageSelector("homepage.navigation.computers_menu");
-        WebElement computersMenu = findElement(computersSelector);
-        elementUtils.hoverOverElement(computersMenu);
+        SelenideElement computersMenu = $(computersSelector);
+        computersMenu.hover();
 
         By notebooksSelector = SelectorUtils.getHomepageSelector("homepage.navigation.computers_dropdown.notebooks");
         click(notebooksSelector);
@@ -276,8 +280,8 @@ public class HomePage extends BasePage {
     public ProductCatalogPage navigateToAccessories() {
         // Hover over Computers first to show submenu
         By computersSelector = SelectorUtils.getHomepageSelector("homepage.navigation.computers_menu");
-        WebElement computersMenu = findElement(computersSelector);
-        elementUtils.hoverOverElement(computersMenu);
+        SelenideElement computersMenu = $(computersSelector);
+        computersMenu.hover();
 
         By accessoriesSelector = SelectorUtils.getHomepageSelector("homepage.navigation.computers_dropdown.accessories");
         click(accessoriesSelector);
@@ -303,8 +307,8 @@ public class HomePage extends BasePage {
     public ProductCatalogPage navigateToCameraPhoto() {
         // Hover over Electronics first to show submenu
         By electronicsSelector = SelectorUtils.getHomepageSelector("homepage.navigation.electronics_menu");
-        WebElement electronicsMenu = findElement(electronicsSelector);
-        elementUtils.hoverOverElement(electronicsMenu);
+        SelenideElement electronicsMenu = $(electronicsSelector);
+        electronicsMenu.hover();
 
         By cameraSelector = SelectorUtils.getHomepageSelector("homepage.navigation.electronics_dropdown.camera_photo");
         click(cameraSelector);
@@ -319,8 +323,8 @@ public class HomePage extends BasePage {
     public ProductCatalogPage navigateToCellPhones() {
         // Hover over Electronics first to show submenu
         By electronicsSelector = SelectorUtils.getHomepageSelector("homepage.navigation.electronics_menu");
-        WebElement electronicsMenu = findElement(electronicsSelector);
-        elementUtils.hoverOverElement(electronicsMenu);
+        SelenideElement electronicsMenu = $(electronicsSelector);
+        electronicsMenu.hover();
 
         By cellPhonesSelector = SelectorUtils.getHomepageSelector("homepage.navigation.electronics_dropdown.cell_phones");
         click(cellPhonesSelector);
@@ -380,7 +384,7 @@ public class HomePage extends BasePage {
      */
     public List<ProductElement> getFeaturedProducts() {
         By productItemsSelector = SelectorUtils.getHomepageSelector("homepage.main_content.featured_products.product_item");
-        List<WebElement> productElements = findElements(productItemsSelector);
+        ElementsCollection productElements = $$(productItemsSelector);
 
         return productElements.stream()
                 .map(element -> new ProductElement(element, driver))
@@ -444,9 +448,9 @@ public class HomePage extends BasePage {
      * Get all category links from sidebar
      * @return List of category link elements
      */
-    public List<WebElement> getSidebarCategoryLinks() {
+    public ElementsCollection getSidebarCategoryLinks() {
         By categoryLinksSelector = SelectorUtils.getHomepageSelector("homepage.sidebar.categories.category_link");
-        return findElements(categoryLinksSelector);
+        return $$(categoryLinksSelector);
     }
 
     /**
@@ -455,10 +459,10 @@ public class HomePage extends BasePage {
      * @return ProductCatalogPage for the selected category
      */
     public ProductCatalogPage clickSidebarCategory(String categoryName) {
-        List<WebElement> categoryLinks = getSidebarCategoryLinks();
-        for (WebElement link : categoryLinks) {
+        ElementsCollection categoryLinks = getSidebarCategoryLinks();
+        for (SelenideElement link : categoryLinks) {
             if (link.getText().trim().equalsIgnoreCase(categoryName.trim())) {
-                click(link);
+                link.click();
                 logger.info("Clicked sidebar category: {}", categoryName);
                 return new ProductCatalogPage(driver, categoryName);
             }
@@ -613,7 +617,7 @@ public class HomePage extends BasePage {
                     }
 
                     // Use soft wait to avoid exceptions for missing elements
-                    WebElement loginElement = waitUtils.softWaitForElementToBeVisible(loginBy, 2);
+                    SelenideElement loginElement = $(loginBy);
                     if (loginElement != null && loginElement.isDisplayed()) {
                         return true;
                     }
@@ -654,7 +658,7 @@ public class HomePage extends BasePage {
                     }
 
                     // Use soft wait to avoid exceptions for missing elements
-                    WebElement logoutElement = waitUtils.softWaitForElementToBeVisible(logoutBy, 2);
+                    SelenideElement logoutElement = $(logoutBy);
                     if (logoutElement != null && logoutElement.isDisplayed()) {
                         return true;
                     }
@@ -797,7 +801,7 @@ public class HomePage extends BasePage {
      */
     public boolean isSearchBoxEnabled() {
         try {
-            WebElement searchBox = findElement(By.id("small-searchterms"));
+            SelenideElement searchBox = $(By.id("small-searchterms"));
             return searchBox.isEnabled();
         } catch (Exception e) {
             return false;
@@ -833,6 +837,11 @@ public class HomePage extends BasePage {
     public ProductSearchPage clickSearchButton() {
         By searchButtonSelector = By.cssSelector("input[type='submit'][value='Search']");
         click(searchButtonSelector);
+
+        // Wait for navigation to search results page
+        waitForUrlToContain("/search");
+        waitForPageToLoad();
+
         logger.info("Clicked search button");
         return new ProductSearchPage(driver);
     }
@@ -943,9 +952,9 @@ public class HomePage extends BasePage {
      */
     public HomePage hoverOverCartIcon() {
         By cartSelector = SelectorUtils.getHomepageSelector("homepage.header.cart_link");
-        WebElement cartElement = findElement(cartSelector);
-        // Use Actions class for hover
-        new org.openqa.selenium.interactions.Actions(driver).moveToElement(cartElement).perform();
+        SelenideElement cartElement = $(cartSelector);
+        // Use hover method from Selenide
+        cartElement.hover();
         return this;
     }
 
@@ -1030,8 +1039,8 @@ public class HomePage extends BasePage {
     public List<String> getFooterLinkTexts() {
         try {
             By footerLinksSelector = By.cssSelector("footer a, .footer a");
-            return findElements(footerLinksSelector).stream()
-                    .map(WebElement::getText)
+            return $$(footerLinksSelector).stream()
+                    .map(SelenideElement::getText)
                     .filter(text -> !text.trim().isEmpty())
                     .collect(Collectors.toList());
         } catch (Exception e) {
@@ -1047,7 +1056,7 @@ public class HomePage extends BasePage {
     public boolean isFooterLinkInternal(String linkText) {
         try {
             By linkSelector = By.xpath("//footer//a[text()='" + linkText + "'] | //.footer//a[text()='" + linkText + "']");
-            WebElement link = findElement(linkSelector);
+            SelenideElement link = $(linkSelector);
             String href = link.getAttribute("href");
             return href != null && (href.startsWith("/") || href.contains("demowebshop"));
         } catch (Exception e) {
@@ -1101,9 +1110,9 @@ public class HomePage extends BasePage {
     public boolean areImagesLoaded() {
         try {
             By imageSelector = By.tagName("img");
-            List<WebElement> images = findElements(imageSelector);
+            ElementsCollection images = $$(imageSelector);
 
-            for (WebElement img : images) {
+            for (SelenideElement img : images) {
                 // Check if image has loaded by verifying naturalWidth > 0
                 Object naturalWidth = ((org.openqa.selenium.JavascriptExecutor) driver).executeScript("return arguments[0].naturalWidth;", img);
                 if (naturalWidth == null || (Long)naturalWidth == 0) {
@@ -1158,7 +1167,7 @@ public class HomePage extends BasePage {
      * @return HomePage for method chaining
      */
     public HomePage clearSearchBox() {
-        WebElement searchBox = findElement(By.id("small-searchterms"));
+        SelenideElement searchBox = $(By.id("small-searchterms"));
         searchBox.clear();
         return this;
     }
@@ -1183,7 +1192,7 @@ public class HomePage extends BasePage {
      */
     public List<String> getImagesWithoutAltText() {
         try {
-            List<WebElement> images = findElements(By.tagName("img"));
+            ElementsCollection images = $$(By.tagName("img"));
             return images.stream()
                     .filter(img -> {
                         String alt = img.getAttribute("alt");
@@ -1204,7 +1213,7 @@ public class HomePage extends BasePage {
     public boolean isKeyboardNavigationSupported() {
         // Basic check for focusable elements
         try {
-            List<WebElement> focusableElements = findElements(By.cssSelector("a, button, input, select, textarea"));
+            ElementsCollection focusableElements = $$(By.cssSelector("a, button, input, select, textarea"));
             return focusableElements.size() > 0;
         } catch (Exception e) {
             return false;
@@ -1235,7 +1244,7 @@ public class HomePage extends BasePage {
      */
     public boolean hasAriaLabels() {
         try {
-            List<WebElement> ariaElements = findElements(By.cssSelector("[aria-label], [aria-labelledby]"));
+            ElementsCollection ariaElements = $$(By.cssSelector("[aria-label], [aria-labelledby]"));
             return ariaElements.size() > 0;
         } catch (Exception e) {
             return false;
@@ -1374,7 +1383,7 @@ public class HomePage extends BasePage {
         List<ProductElement> products = getFeaturedProducts();
         return products.stream().allMatch(product -> {
             try {
-                WebElement titleLink = product.getElement().findElement(By.cssSelector("a, .product-title"));
+                SelenideElement titleLink = product.getElement().find(By.cssSelector("a, .product-title"));
                 return titleLink.isEnabled();
             } catch (Exception e) {
                 return false;
@@ -1388,7 +1397,7 @@ public class HomePage extends BasePage {
     public boolean areLinksClickableOnMobile() {
         // For mobile testing, check if links have adequate touch targets
         try {
-            List<WebElement> links = findElements(By.tagName("a"));
+            ElementsCollection links = $$(By.tagName("a"));
             return links.stream().allMatch(link -> {
                 try {
                     return link.isEnabled() && link.isDisplayed();
@@ -1419,7 +1428,7 @@ public class HomePage extends BasePage {
      */
     public boolean isSearchBoxTouchFriendly() {
         try {
-            WebElement searchBox = findElement(By.id("small-searchterms"));
+            SelenideElement searchBox = $(By.id("small-searchterms"));
             // Check if element is large enough for touch interaction
             return searchBox.isDisplayed() && searchBox.isEnabled();
         } catch (Exception e) {
@@ -1440,7 +1449,7 @@ public class HomePage extends BasePage {
     public String getMetaDescription() {
         try {
             By metaDescSelector = By.xpath("//meta[@name='description']");
-            WebElement metaElement = findElement(metaDescSelector);
+            SelenideElement metaElement = $(metaDescSelector);
             return metaElement.getAttribute("content");
         } catch (Exception e) {
             return "";
@@ -1463,7 +1472,7 @@ public class HomePage extends BasePage {
      */
     public boolean hasHeadings() {
         try {
-            List<WebElement> headings = findElements(By.cssSelector("h1, h2, h3, h4, h5, h6"));
+            ElementsCollection headings = $$(By.cssSelector("h1, h2, h3, h4, h5, h6"));
             return headings.size() > 0;
         } catch (Exception e) {
             return false;
@@ -1472,10 +1481,10 @@ public class HomePage extends BasePage {
 
     // Inner class for handling product elements
     public static class ProductElement {
-        private final WebElement productElement;
+        private final SelenideElement productElement;
         private final WebDriver driver;
 
-        public ProductElement(WebElement productElement, WebDriver driver) {
+        public ProductElement(SelenideElement productElement, WebDriver driver) {
             this.productElement = productElement;
             this.driver = driver;
         }
@@ -1485,8 +1494,7 @@ public class HomePage extends BasePage {
          * @return Product title
          */
         public String getTitle() {
-            WebElement titleElement = productElement.findElement(
-                SelectorUtils.getHomepageSelector("homepage.main_content.featured_products.product_title"));
+            SelenideElement titleElement = productElement.$(SelectorUtils.getHomepageSelector("homepage.main_content.featured_products.product_title"));
             return titleElement.getText();
         }
 
@@ -1495,8 +1503,7 @@ public class HomePage extends BasePage {
          * @return Product price
          */
         public String getPrice() {
-            WebElement priceElement = productElement.findElement(
-                SelectorUtils.getHomepageSelector("homepage.main_content.featured_products.product_price"));
+            SelenideElement priceElement = productElement.$(SelectorUtils.getHomepageSelector("homepage.main_content.featured_products.product_price"));
             return priceElement.getText();
         }
 
@@ -1505,8 +1512,7 @@ public class HomePage extends BasePage {
          * @return ProductDetailsPage
          */
         public ProductDetailsPage clickTitle() {
-            WebElement titleElement = productElement.findElement(
-                SelectorUtils.getHomepageSelector("homepage.main_content.featured_products.product_title"));
+            SelenideElement titleElement = productElement.$(SelectorUtils.getHomepageSelector("homepage.main_content.featured_products.product_title"));
             titleElement.click();
             return new ProductDetailsPage(driver);
         }
@@ -1515,7 +1521,7 @@ public class HomePage extends BasePage {
          * Get product element for custom interactions
          * @return WebElement representing this product
          */
-        public WebElement getElement() {
+        public SelenideElement getElement() {
             return productElement;
         }
     }
@@ -1663,6 +1669,95 @@ public class HomePage extends BasePage {
             } catch (Exception e) {
                 return false;
             }
+        }
+    }
+
+    // ==================== SELENIDE ENHANCED METHODS ====================
+
+    /**
+     * Click login link using Selenide (more reliable)
+     * @return LoginPage instance
+     */
+    public LoginPage clickLoginLinkSelenide() {
+        clickSelenide("a[href='/login'], a[href*='login']");
+        logger.info("Clicked login link using Selenide");
+        return new LoginPage(driver);
+    }
+
+    /**
+     * Click register link using Selenide
+     * @return RegisterPage instance
+     */
+    public RegisterPage clickRegisterLinkSelenide() {
+        clickSelenide("a[href='/register'], a[href*='register']");
+        logger.info("Clicked register link using Selenide");
+        return new RegisterPage(driver);
+    }
+
+    /**
+     * Perform search using Selenide
+     * @param searchTerm Search term
+     * @return ProductSearchPage with results
+     */
+    public ProductSearchPage performSearchSelenide(String searchTerm) {
+        typeSelenide("#small-searchterms", searchTerm);
+        clickSelenide("input[type='submit'][value='Search']");
+
+        // Wait for navigation to search results page
+        waitForUrlToContain("/search");
+        waitForPageToLoad();
+
+        logger.info("Performed search using Selenide for: {}", searchTerm);
+        return new ProductSearchPage(driver);
+    }
+
+    /**
+     * Click shopping cart using Selenide
+     * @return ShoppingCartPage instance
+     */
+    public ShoppingCartPage clickShoppingCartLinkSelenide() {
+        clickSelenide("a[href*='cart'], .cart");
+        logger.info("Clicked shopping cart using Selenide");
+        return new ShoppingCartPage(driver);
+    }
+
+    /**
+     * Navigate to Books category using Selenide
+     * @return ProductCatalogPage for books
+     */
+    public ProductCatalogPage navigateToBooksSelenide() {
+        clickSelenide("a[href*='/books']");
+        logger.info("Navigated to Books using Selenide");
+        return new ProductCatalogPage(driver, "Books");
+    }
+
+    /**
+     * Check if login link is displayed using Selenide
+     * @return true if login link is visible
+     */
+    public boolean isLoginLinkDisplayedSelenide() {
+        return isVisibleSelenide("a[href='/login'], a[href*='login']");
+    }
+
+    /**
+     * Check if search box is displayed using Selenide
+     * @return true if search box is visible
+     */
+    public boolean isSearchBoxDisplayedSelenide() {
+        return isVisibleSelenide("#small-searchterms");
+    }
+
+    /**
+     * Get cart quantity using Selenide
+     * @return Cart quantity as integer
+     */
+    public int getCartQuantitySelenide() {
+        try {
+            String qtyText = getTextSelenide(".cart-qty, .cart-quantity");
+            String numberOnly = qtyText.replaceAll("[^0-9]", "");
+            return numberOnly.isEmpty() ? 0 : Integer.parseInt(numberOnly);
+        } catch (Exception e) {
+            return 0;
         }
     }
 

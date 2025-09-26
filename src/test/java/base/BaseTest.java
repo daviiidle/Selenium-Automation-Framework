@@ -9,6 +9,9 @@ import org.openqa.selenium.WebDriver;
 import org.testng.annotations.*;
 import com.demowebshop.automation.pages.HomePage;
 import com.demowebshop.automation.utils.reporting.ScreenshotUtils;
+import com.demowebshop.automation.config.SelenideConfig;
+import com.codeborne.selenide.Configuration;
+import listeners.RetryAnalyzer;
 
 import java.lang.reflect.Method;
 
@@ -87,6 +90,19 @@ public abstract class BaseTest {
     @BeforeSuite
     public void beforeSuite() {
         logger.info("Starting test suite execution");
+
+        // Force headless mode at system level
+        System.setProperty("selenide.headless", "true");
+        System.setProperty("headless", "true");
+        System.setProperty("browser.headless", "true");
+        System.setProperty("chrome.switches", "--headless=new --no-sandbox --disable-dev-shm-usage");
+
+        // Initialize Selenide with headless configuration
+        Configuration.headless = true;
+        Configuration.browser = "chrome";
+        SelenideConfig.configureSelenice();
+
+        logger.info("Forced headless mode via system properties and Selenide configuration");
     }
 
     @AfterSuite
@@ -170,4 +186,5 @@ public abstract class BaseTest {
         // Override in test classes if additional teardown is needed
         logger.debug("Running additionalTeardown hook");
     }
+
 }

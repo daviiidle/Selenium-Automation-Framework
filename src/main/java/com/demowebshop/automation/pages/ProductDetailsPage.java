@@ -5,6 +5,11 @@ import com.demowebshop.automation.utils.data.SelectorUtils;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
+import com.codeborne.selenide.SelenideElement;
+import com.codeborne.selenide.ElementsCollection;
+
+import static com.codeborne.selenide.Selenide.$;
+import static com.codeborne.selenide.Selenide.$$;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -160,7 +165,7 @@ public class ProductDetailsPage extends BasePage {
     public void selectQuantity(int quantity) {
         try {
             By quantitySelector = SelectorUtils.getProductSelector("product_pages.product_detail.add_to_cart.quantity");
-            WebElement quantityField = findElement(quantitySelector);
+            SelenideElement quantityField = $(quantitySelector);
             clear(quantityField);
             type(quantityField, String.valueOf(quantity));
             logger.info("Selected quantity: {}", quantity);
@@ -228,7 +233,7 @@ public class ProductDetailsPage extends BasePage {
      */
     public ProductDetailsPage setQuantity(int quantity) {
         By quantitySelector = SelectorUtils.getProductSelector("product_pages.product_detail.purchase_options.quantity_input");
-        WebElement quantityInput = findElement(quantitySelector);
+        SelenideElement quantityInput = $(quantitySelector);
 
         quantityInput.clear();
         type(quantityInput, String.valueOf(quantity));
@@ -435,9 +440,9 @@ public class ProductDetailsPage extends BasePage {
     public List<String> getProductTags() {
         try {
             By tagLinksSelector = SelectorUtils.getProductSelector("product_pages.product_detail.product_tags.tag_link");
-            List<WebElement> tagElements = findElements(tagLinksSelector);
+            ElementsCollection tagElements = $$(tagLinksSelector);
             return tagElements.stream()
-                    .map(WebElement::getText)
+                    .map(SelenideElement::getText)
                     .filter(text -> !text.trim().isEmpty())
                     .collect(Collectors.toList());
         } catch (Exception e) {
@@ -454,11 +459,11 @@ public class ProductDetailsPage extends BasePage {
     public ProductSearchPage clickProductTag(String tagName) {
         try {
             By tagLinksSelector = SelectorUtils.getProductSelector("product_pages.product_detail.product_tags.tag_link");
-            List<WebElement> tagElements = findElements(tagLinksSelector);
+            ElementsCollection tagElements = $$(tagLinksSelector);
 
-            for (WebElement tag : tagElements) {
+            for (SelenideElement tag : tagElements) {
                 if (tag.getText().trim().equalsIgnoreCase(tagName.trim())) {
-                    click(tag);
+                    tag.click();
                     logger.info("Clicked product tag: {}", tagName);
                     return new ProductSearchPage(driver);
                 }
@@ -487,7 +492,7 @@ public class ProductDetailsPage extends BasePage {
     public List<RelatedProductElement> getRelatedProducts() {
         try {
             By relatedItemsSelector = SelectorUtils.getProductSelector("product_pages.product_detail.related_products.related_item");
-            List<WebElement> relatedElements = findElements(relatedItemsSelector);
+            ElementsCollection relatedElements = $$(relatedItemsSelector);
 
             return relatedElements.stream()
                     .map(element -> new RelatedProductElement(element, driver))
@@ -676,7 +681,7 @@ public class ProductDetailsPage extends BasePage {
      */
     public boolean areProductLinksClickable() {
         try {
-            List<WebElement> links = findElements(By.tagName("a"));
+            ElementsCollection links = $$(By.tagName("a"));
             return links.stream().allMatch(link -> link.isEnabled() && link.isDisplayed());
         } catch (Exception e) {
             return false;
@@ -821,10 +826,10 @@ public class ProductDetailsPage extends BasePage {
 
     // Inner class for related products
     public static class RelatedProductElement {
-        private final WebElement productElement;
+        private final SelenideElement productElement;
         private final WebDriver driver;
 
-        public RelatedProductElement(WebElement productElement, WebDriver driver) {
+        public RelatedProductElement(SelenideElement productElement, WebDriver driver) {
             this.productElement = productElement;
             this.driver = driver;
         }
@@ -835,7 +840,7 @@ public class ProductDetailsPage extends BasePage {
          */
         public String getTitle() {
             try {
-                WebElement titleElement = productElement.findElement(By.cssSelector(".product-title a"));
+                SelenideElement titleElement = productElement.$(".product-title a");
                 return titleElement.getText();
             } catch (Exception e) {
                 return "";
@@ -848,7 +853,7 @@ public class ProductDetailsPage extends BasePage {
          */
         public String getPrice() {
             try {
-                WebElement priceElement = productElement.findElement(By.cssSelector(".price"));
+                SelenideElement priceElement = productElement.$(".price");
                 return priceElement.getText();
             } catch (Exception e) {
                 return "";
@@ -861,7 +866,7 @@ public class ProductDetailsPage extends BasePage {
          */
         public ProductDetailsPage click() {
             try {
-                WebElement titleElement = productElement.findElement(By.cssSelector(".product-title a"));
+                SelenideElement titleElement = productElement.$(".product-title a");
                 titleElement.click();
                 return new ProductDetailsPage(driver);
             } catch (Exception e) {
@@ -874,7 +879,7 @@ public class ProductDetailsPage extends BasePage {
          * Get underlying WebElement
          * @return WebElement for this related product
          */
-        public WebElement getElement() {
+        public SelenideElement getElement() {
             return productElement;
         }
     }

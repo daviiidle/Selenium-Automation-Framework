@@ -4,7 +4,11 @@ import com.demowebshop.automation.pages.common.BasePage;
 import com.demowebshop.automation.utils.data.SelectorUtils;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.WebElement;
+import com.codeborne.selenide.SelenideElement;
+import com.codeborne.selenide.ElementsCollection;
+
+import static com.codeborne.selenide.Selenide.$;
+import static com.codeborne.selenide.Selenide.$$;
 import org.openqa.selenium.support.ui.Select;
 
 import java.util.List;
@@ -115,7 +119,7 @@ public class ProductSearchPage extends BasePage {
     public List<ProductCatalogPage.ProductElement> getSearchResults() {
         // Reuse ProductElement from ProductCatalogPage as they have similar structure
         By productItemsSelector = SelectorUtils.getProductSelector("product_pages.category_listing.product_grid.product_item");
-        List<WebElement> productElements = findElements(productItemsSelector);
+        ElementsCollection productElements = $$(productItemsSelector);
 
         return productElements.stream()
                 .map(element -> new ProductCatalogPage.ProductElement(element, driver))
@@ -233,7 +237,7 @@ public class ProductSearchPage extends BasePage {
         try {
             By sortSelector = By.cssSelector(".sort-dropdown, select[name*='sort']");
             if (isElementDisplayed(sortSelector)) {
-                WebElement sortDropdown = findElement(sortSelector);
+                SelenideElement sortDropdown = $(sortSelector);
                 org.openqa.selenium.support.ui.Select select = new org.openqa.selenium.support.ui.Select(sortDropdown);
                 select.selectByVisibleText(sortOption);
                 waitForPageToLoad();
@@ -252,7 +256,7 @@ public class ProductSearchPage extends BasePage {
         try {
             By sortSelector = By.cssSelector(".sort-dropdown, select[name*='sort']");
             if (isElementDisplayed(sortSelector)) {
-                WebElement sortDropdown = findElement(sortSelector);
+                SelenideElement sortDropdown = $(sortSelector);
                 org.openqa.selenium.support.ui.Select select = new org.openqa.selenium.support.ui.Select(sortDropdown);
                 return select.getFirstSelectedOption().getText();
             }

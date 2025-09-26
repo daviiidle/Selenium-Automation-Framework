@@ -4,11 +4,14 @@ import com.demowebshop.automation.pages.common.BasePage;
 import com.demowebshop.automation.utils.data.SelectorUtils;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.WebElement;
-import org.openqa.selenium.support.FindBy;
+import com.codeborne.selenide.SelenideElement;
+import com.codeborne.selenide.ElementsCollection;
 
 import java.util.List;
 import java.util.stream.Collectors;
+
+import static com.codeborne.selenide.Selenide.$;
+import static com.codeborne.selenide.Selenide.$$;
 
 /**
  * Page Object Model for the Registration Page
@@ -18,30 +21,15 @@ public class RegisterPage extends BasePage {
 
     private static final String PAGE_URL_PATTERN = "/register";
 
-    // Form elements using @FindBy
-    @FindBy(css = "input[value='M']")
-    private WebElement genderMaleRadio;
-
-    @FindBy(css = "input[value='F']")
-    private WebElement genderFemaleRadio;
-
-    @FindBy(name = "FirstName")
-    private WebElement firstNameInput;
-
-    @FindBy(name = "LastName")
-    private WebElement lastNameInput;
-
-    @FindBy(name = "Email")
-    private WebElement emailInput;
-
-    @FindBy(name = "Password")
-    private WebElement passwordInput;
-
-    @FindBy(name = "ConfirmPassword")
-    private WebElement confirmPasswordInput;
-
-    @FindBy(css = "input[type='submit'][value='Register']")
-    private WebElement registerButton;
+    // Selenide elements - no need for @FindBy
+    private final SelenideElement genderMaleRadio = $("input[value='M']");
+    private final SelenideElement genderFemaleRadio = $("input[value='F']");
+    private final SelenideElement firstNameInput = $("input[name='FirstName']");
+    private final SelenideElement lastNameInput = $("input[name='LastName']");
+    private final SelenideElement emailInput = $("input[name='Email']");
+    private final SelenideElement passwordInput = $("input[name='Password']");
+    private final SelenideElement confirmPasswordInput = $("input[name='ConfirmPassword']");
+    private final SelenideElement registerButton = $("input[type='submit'][value='Register']");
 
     public RegisterPage(WebDriver driver) {
         super(driver);
@@ -157,7 +145,7 @@ public class RegisterPage extends BasePage {
         try {
             By newsletterSelector = By.id("Newsletter");
             if (isElementDisplayed(newsletterSelector)) {
-                WebElement newsletterCheckbox = findElement(newsletterSelector);
+                SelenideElement newsletterCheckbox = $(newsletterSelector);
                 if (!newsletterCheckbox.isSelected()) {
                     click(newsletterCheckbox);
                     logger.info("Subscribed to newsletter");
@@ -235,7 +223,7 @@ public class RegisterPage extends BasePage {
             if (!clicked) {
                 try {
                     // Wait for the register button to be clickable using the standard method
-                    WebElement clickableButton = waitUtils.waitForElementToBeClickable(registerButton, 5);
+                    SelenideElement clickableButton = registerButton;
                     elementUtils.clickElement(clickableButton);
                     logger.info("Clicked register button using @FindBy element");
                     clicked = true;
@@ -428,7 +416,7 @@ public class RegisterPage extends BasePage {
             for (String selector : errorSelectors) {
                 try {
                     By errorBy = By.cssSelector(selector);
-                    WebElement errorElement = waitUtils.softWaitForElementToBeVisible(errorBy, 2);
+                    SelenideElement errorElement = $(errorBy);
                     if (errorElement != null) {
                         String errorText = errorElement.getText();
                         if (!errorText.trim().isEmpty()) {
@@ -451,10 +439,10 @@ public class RegisterPage extends BasePage {
 
             // Check for multiple field validation errors using soft wait
             try {
-                List<WebElement> fieldErrors = waitUtils.softWaitForElementsToBeVisible(By.cssSelector(".field-validation-error"), 2);
+                ElementsCollection fieldErrors = $$(By.cssSelector(".field-validation-error"));
                 if (fieldErrors != null && !fieldErrors.isEmpty()) {
                     List<String> errors = fieldErrors.stream()
-                            .map(WebElement::getText)
+                            .map(SelenideElement::getText)
                             .map(String::trim)
                             .filter(s -> !s.isEmpty())
                             .toList();
@@ -470,7 +458,7 @@ public class RegisterPage extends BasePage {
             // Fallback to original method with SelectorUtils
             try {
                 By summaryErrorSelector = SelectorUtils.getAuthSelector("authentication.registration_page.validation.summary_errors");
-                WebElement errorElement = waitUtils.softWaitForElementToBeVisible(summaryErrorSelector, 2);
+                SelenideElement errorElement = $(summaryErrorSelector);
                 if (errorElement != null) {
                     String errorText = errorElement.getText();
                     if (!errorText.trim().isEmpty()) {
@@ -543,7 +531,7 @@ public class RegisterPage extends BasePage {
 
         for (String selector : errorSelectors) {
             try {
-                List<org.openqa.selenium.WebElement> elements = findElements(By.cssSelector(selector));
+                ElementsCollection elements = $$(By.cssSelector(selector));
                 if (!elements.isEmpty()) {
                     for (int i = 0; i < elements.size(); i++) {
                         String text = elements.get(i).getText();
@@ -560,7 +548,7 @@ public class RegisterPage extends BasePage {
         String[] containerSelectors = {".result", ".message", ".content", ".registration-form", "form"};
         for (String selector : containerSelectors) {
             try {
-                List<org.openqa.selenium.WebElement> elements = findElements(By.cssSelector(selector));
+                ElementsCollection elements = $$(By.cssSelector(selector));
                 if (!elements.isEmpty()) {
                     String text = elements.get(0).getText().toLowerCase();
                     if (text.contains("error") || text.contains("invalid") || text.contains("required")) {
@@ -634,10 +622,10 @@ public class RegisterPage extends BasePage {
 
             for (String selector : fieldErrorSelectors) {
                 try {
-                    List<WebElement> fieldErrors = findElements(By.cssSelector(selector));
+                    ElementsCollection fieldErrors = $$(By.cssSelector(selector));
                     if (!fieldErrors.isEmpty()) {
                         List<String> errors = fieldErrors.stream()
-                                .map(WebElement::getText)
+                                .map(SelenideElement::getText)
                                 .map(String::trim)
                                 .filter(text -> !text.isEmpty())
                                 .toList();
@@ -654,9 +642,9 @@ public class RegisterPage extends BasePage {
             // Fallback to original method with SelectorUtils
             try {
                 By fieldErrorSelector = SelectorUtils.getAuthSelector("authentication.registration_page.validation.validation_errors");
-                List<WebElement> fieldErrors = findElements(fieldErrorSelector);
+                ElementsCollection fieldErrors = $$(fieldErrorSelector);
                 List<String> errors = fieldErrors.stream()
-                        .map(WebElement::getText)
+                        .map(SelenideElement::getText)
                         .map(String::trim)
                         .filter(text -> !text.isEmpty())
                         .toList();

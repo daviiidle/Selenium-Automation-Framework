@@ -4,32 +4,30 @@ import com.demowebshop.automation.pages.common.BasePage;
 import com.demowebshop.automation.utils.data.SelectorUtils;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.WebElement;
-import org.openqa.selenium.support.FindBy;
+import com.codeborne.selenide.SelenideElement;
+import com.codeborne.selenide.ElementsCollection;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static com.codeborne.selenide.Selenide.$;
+import static com.codeborne.selenide.Selenide.$$;
+import static com.codeborne.selenide.Condition.*;
+
 /**
  * Page Object Model for the Login Page
- * Provides methods for user authentication and form validation
+ * Migrated to use Selenide as primary automation approach
+ * Provides reliable methods for user authentication and form validation
  */
 public class LoginPage extends BasePage {
 
     private static final String PAGE_URL_PATTERN = "/login";
 
-    // Static elements using @FindBy
-    @FindBy(name = "Email")
-    private WebElement emailInput;
-
-    @FindBy(name = "Password")
-    private WebElement passwordInput;
-
-    @FindBy(name = "RememberMe")
-    private WebElement rememberMeCheckbox;
-
-    @FindBy(css = "input[type='submit'][value='Log in']")
-    private WebElement loginButton;
+    // Selenide elements - no need for @FindBy
+    private final SelenideElement emailInput = $("input[name='Email']");
+    private final SelenideElement passwordInput = $("input[name='Password']");
+    private final SelenideElement rememberMeCheckbox = $("input[name='RememberMe']");
+    private final SelenideElement loginButton = $("input[type='submit'][value='Log in']");
 
     public LoginPage(WebDriver driver) {
         super(driver);
@@ -49,49 +47,50 @@ public class LoginPage extends BasePage {
         return this;
     }
 
-    // Form Interaction Methods
+    // Form Interaction Methods - Selenide Primary
 
     /**
-     * Enter email address
+     * Enter email address using Selenide
      * @param email Email address to enter
      * @return LoginPage for method chaining
      */
     public LoginPage enterEmail(String email) {
-        type(emailInput, email);
+        $("input[name='Email']").setValue(email);
         logger.info("Entered email: {}", email);
         return this;
     }
 
     /**
-     * Enter password
+     * Enter password using Selenide
      * @param password Password to enter
      * @return LoginPage for method chaining
      */
     public LoginPage enterPassword(String password) {
-        type(passwordInput, password);
+        $("input[name='Password']").setValue(password);
         logger.info("Entered password");
         return this;
     }
 
     /**
-     * Set remember me checkbox state
+     * Set remember me checkbox state using Selenide
      * @param remember true to check, false to uncheck
      * @return LoginPage for method chaining
      */
     public LoginPage setRememberMe(boolean remember) {
-        if (remember != rememberMeCheckbox.isSelected()) {
-            click(rememberMeCheckbox);
+        SelenideElement checkbox = $("input[name='RememberMe']");
+        if (remember != checkbox.isSelected()) {
+            checkbox.click();
             logger.info("Set remember me to: {}", remember);
         }
         return this;
     }
 
     /**
-     * Click login button
+     * Click login button using Selenide
      * @return HomePage if login successful, LoginPage if failed
      */
     public BasePage clickLoginButton() {
-        click(loginButton);
+        $("input[type='submit'][value='Log in']").click();
         logger.info("Clicked login button");
 
         // Wait briefly for potential redirect or error messages
@@ -107,7 +106,7 @@ public class LoginPage extends BasePage {
             return this;
         } else {
             logger.info("Login appears successful - redirecting to homepage");
-            return new HomePage(driver);
+            return new HomePage();
         }
     }
 
@@ -177,7 +176,7 @@ public class LoginPage extends BasePage {
             // Try primary selector from authentication-selectors.json using soft wait
             try {
                 By errorSelector = SelectorUtils.getAuthSelector("authentication.login_page.validation.error_messages");
-                WebElement errorElement = waitUtils.softWaitForElementToBeVisible(errorSelector, 2);
+                SelenideElement errorElement = $(errorSelector);
                 if (errorElement != null) {
                     String errorText = errorElement.getText();
                     if (errorText != null && !errorText.trim().isEmpty()) {
@@ -210,7 +209,7 @@ public class LoginPage extends BasePage {
             for (String selector : fallbackSelectors) {
                 try {
                     By fallbackBy = By.cssSelector(selector);
-                    WebElement errorElement = waitUtils.softWaitForElementToBeVisible(fallbackBy, 1);
+                    SelenideElement errorElement = $(fallbackBy);
                     if (errorElement != null) {
                         String errorText = errorElement.getText();
                         if (errorText != null && !errorText.trim().isEmpty()) {
@@ -269,7 +268,7 @@ public class LoginPage extends BasePage {
             try {
                 By errorSelector = SelectorUtils.getAuthSelector("authentication.login_page.validation.error_messages");
                 if (isElementDisplayed(errorSelector)) {
-                    WebElement errorContainer = findElement(errorSelector);
+                    SelenideElement errorContainer = $(errorSelector);
                     String errorText = errorContainer.getText();
                     if (errorText != null && !errorText.trim().isEmpty()) {
                         return List.of(errorText.split("\n"));
@@ -301,7 +300,7 @@ public class LoginPage extends BasePage {
                 try {
                     By fallbackBy = By.cssSelector(selector);
                     if (isElementDisplayed(fallbackBy)) {
-                        WebElement errorContainer = findElement(fallbackBy);
+                        SelenideElement errorContainer = $(fallbackBy);
                         String errorText = errorContainer.getText();
                         if (errorText != null && !errorText.trim().isEmpty()) {
                             return List.of(errorText.split("\n"));
@@ -380,9 +379,9 @@ public class LoginPage extends BasePage {
     public List<String> getFieldValidationErrors() {
         try {
             By fieldErrorSelector = SelectorUtils.getAuthSelector("authentication.login_page.validation.field_errors");
-            List<WebElement> fieldErrors = findElements(fieldErrorSelector);
+            ElementsCollection fieldErrors = $$(fieldErrorSelector);
             return fieldErrors.stream()
-                    .map(WebElement::getText)
+                    .map(SelenideElement::getText)
                     .filter(text -> !text.trim().isEmpty())
                     .collect(Collectors.toList());
         } catch (Exception e) {
@@ -408,7 +407,7 @@ public class LoginPage extends BasePage {
      * @return Current email value
      */
     public String getEmailValue() {
-        return emailInput.getAttribute("value");
+        return emailInput.getValue();
     }
 
     /**
@@ -427,7 +426,7 @@ public class LoginPage extends BasePage {
         emailInput.clear();
         passwordInput.clear();
         if (rememberMeCheckbox.isSelected()) {
-            click(rememberMeCheckbox);
+            rememberMeCheckbox.click();
         }
         logger.info("Cleared login form");
         return this;
@@ -562,5 +561,172 @@ public class LoginPage extends BasePage {
         } catch (Exception e) {
             return false;
         }
+    }
+
+    // ==================== SELENIDE ENHANCED METHODS ====================
+
+    /**
+     * Enter email using Selenide (more reliable)
+     * @param email Email address to enter
+     * @return LoginPage for method chaining
+     */
+    public LoginPage enterEmailSelenide(String email) {
+        typeSelenide("input[name='Email']", email);
+        logger.info("Entered email using Selenide: {}", email);
+        return this;
+    }
+
+    /**
+     * Enter password using Selenide (more reliable)
+     * @param password Password to enter
+     * @return LoginPage for method chaining
+     */
+    public LoginPage enterPasswordSelenide(String password) {
+        typeSelenide("input[name='Password']", password);
+        logger.info("Entered password using Selenide");
+        return this;
+    }
+
+    /**
+     * Click login button using Selenide (more reliable)
+     * @return HomePage if successful, LoginPage if failed
+     */
+    public BasePage clickLoginButtonSelenide() {
+        clickSelenide("input[type='submit'][value='Log in']");
+        logger.info("Clicked login button using Selenide");
+
+        // Brief wait for page response
+        try {
+            Thread.sleep(2000);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+
+        // Check success by URL or error presence
+        if (hasValidationErrors()) {
+            logger.warn("Login failed using Selenide - validation errors present");
+            return this;
+        } else {
+            logger.info("Login successful using Selenide - redirecting to homepage");
+            return new HomePage(driver);
+        }
+    }
+
+    /**
+     * Perform complete login using Selenide methods
+     * @param email Email address
+     * @param password Password
+     * @return HomePage if successful, LoginPage if failed
+     */
+    public BasePage loginSelenide(String email, String password) {
+        return loginSelenide(email, password, false);
+    }
+
+    /**
+     * Perform complete login using Selenide with remember me option
+     * @param email Email address
+     * @param password Password
+     * @param rememberMe Whether to check remember me
+     * @return HomePage if successful, LoginPage if failed
+     */
+    public BasePage loginSelenide(String email, String password, boolean rememberMe) {
+        enterEmailSelenide(email);
+        enterPasswordSelenide(password);
+        if (rememberMe) {
+            setRememberMeSelenide(true);
+        }
+        return clickLoginButtonSelenide();
+    }
+
+    /**
+     * Set remember me checkbox using Selenide
+     * @param remember true to check, false to uncheck
+     * @return LoginPage for method chaining
+     */
+    public LoginPage setRememberMeSelenide(boolean remember) {
+        if (remember != $("input[name='RememberMe']").isSelected()) {
+            clickSelenide("input[name='RememberMe']");
+            logger.info("Set remember me using Selenide to: {}", remember);
+        }
+        return this;
+    }
+
+    /**
+     * Clear form fields using Selenide
+     * @return LoginPage for method chaining
+     */
+    public LoginPage clearFormSelenide() {
+        $("input[name='Email']").clear();
+        $("input[name='Password']").clear();
+        if ($("input[name='RememberMe']").isSelected()) {
+            $("input[name='RememberMe']").click();
+        }
+        logger.info("Cleared login form using Selenide");
+        return this;
+    }
+
+    /**
+     * Check if validation errors are visible using Selenide
+     * @return true if errors are displayed
+     */
+    public boolean hasValidationErrorsSelenide() {
+        return isVisibleSelenide(".validation-summary-errors") ||
+               isVisibleSelenide(".field-validation-error") ||
+               isVisibleSelenide(".error-message");
+    }
+
+    /**
+     * Get validation error message using Selenide
+     * @return Error message text or empty string
+     */
+    public String getValidationErrorMessageSelenide() {
+        if (isVisibleSelenide(".validation-summary-errors")) {
+            return getTextSelenide(".validation-summary-errors");
+        } else if (isVisibleSelenide(".field-validation-error")) {
+            return getTextSelenide(".field-validation-error");
+        } else if (isVisibleSelenide(".error-message")) {
+            return getTextSelenide(".error-message");
+        }
+        return "";
+    }
+
+    /**
+     * Check if email field is displayed using Selenide
+     * @return true if email field is visible
+     */
+    public boolean isEmailFieldDisplayedSelenide() {
+        return isVisibleSelenide("input[name='Email']");
+    }
+
+    /**
+     * Check if password field is displayed using Selenide
+     * @return true if password field is visible
+     */
+    public boolean isPasswordFieldDisplayedSelenide() {
+        return isVisibleSelenide("input[name='Password']");
+    }
+
+    /**
+     * Check if login button is displayed using Selenide
+     * @return true if login button is visible
+     */
+    public boolean isLoginButtonDisplayedSelenide() {
+        return isVisibleSelenide("input[type='submit'][value='Log in']");
+    }
+
+    /**
+     * Get email field value using Selenide
+     * @return Current email value
+     */
+    public String getEmailValueSelenide() {
+        return $("input[name='Email']").getValue();
+    }
+
+    /**
+     * Check if remember me is selected using Selenide
+     * @return true if checkbox is checked
+     */
+    public boolean isRememberMeSelectedSelenide() {
+        return $("input[name='RememberMe']").isSelected();
     }
 }

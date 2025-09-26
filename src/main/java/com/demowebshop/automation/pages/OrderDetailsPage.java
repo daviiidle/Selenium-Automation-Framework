@@ -3,7 +3,11 @@ package com.demowebshop.automation.pages;
 import com.demowebshop.automation.pages.common.BasePage;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.WebElement;
+import com.codeborne.selenide.SelenideElement;
+import com.codeborne.selenide.ElementsCollection;
+
+import static com.codeborne.selenide.Selenide.$;
+import static com.codeborne.selenide.Selenide.$$;
 
 import java.util.List;
 
@@ -71,7 +75,7 @@ public class OrderDetailsPage extends BasePage {
         try {
             By itemSelector = By.cssSelector(".product-name, .item-name");
             return findElements(itemSelector).stream()
-                    .map(WebElement::getText)
+                    .map(SelenideElement::getText)
                     .toList();
         } catch (Exception e) {
             return List.of();
@@ -380,7 +384,7 @@ public class OrderDetailsPage extends BasePage {
     public String getFirstItemName() {
         try {
             By itemNameSelector = By.cssSelector(".product-name, .item-name");
-            List<WebElement> itemNames = findElements(itemNameSelector);
+            ElementsCollection itemNames = $$(itemNameSelector);
             if (!itemNames.isEmpty()) {
                 return itemNames.get(0).getText();
             }
@@ -397,7 +401,7 @@ public class OrderDetailsPage extends BasePage {
     public String getFirstItemPrice() {
         try {
             By itemPriceSelector = By.cssSelector(".product-price, .item-price, .unit-price");
-            List<WebElement> itemPrices = findElements(itemPriceSelector);
+            ElementsCollection itemPrices = $$(itemPriceSelector);
             if (!itemPrices.isEmpty()) {
                 return itemPrices.get(0).getText();
             }
@@ -414,7 +418,7 @@ public class OrderDetailsPage extends BasePage {
     public String getFirstItemQuantity() {
         try {
             By itemQuantitySelector = By.cssSelector(".product-quantity, .item-quantity, .qty");
-            List<WebElement> itemQuantities = findElements(itemQuantitySelector);
+            ElementsCollection itemQuantities = $$(itemQuantitySelector);
             if (!itemQuantities.isEmpty()) {
                 return itemQuantities.get(0).getText();
             }

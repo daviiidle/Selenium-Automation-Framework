@@ -5,6 +5,11 @@ import com.demowebshop.automation.utils.data.SelectorUtils;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
+import com.codeborne.selenide.SelenideElement;
+import com.codeborne.selenide.ElementsCollection;
+
+import static com.codeborne.selenide.Selenide.$;
+import static com.codeborne.selenide.Selenide.$$;
 
 import java.math.BigDecimal;
 import java.text.NumberFormat;
@@ -77,7 +82,7 @@ public class ShoppingCartPage extends BasePage {
     public List<CartItem> getCartItems() {
         try {
             By itemRowSelector = SelectorUtils.getCartSelector("cart_and_checkout.shopping_cart.cart_with_items.item_row");
-            List<WebElement> itemElements = findElements(itemRowSelector);
+            ElementsCollection itemElements = $$(itemRowSelector);
 
             return itemElements.stream()
                     .map(element -> new CartItem(element, driver))
@@ -159,9 +164,9 @@ public class ShoppingCartPage extends BasePage {
     public ShoppingCartPage updateItemQuantity(String productName, int newQuantity) {
         try {
             By quantitySelector = By.cssSelector("input[name*='quantity']");
-            List<WebElement> quantityFields = findElements(quantitySelector);
+            ElementsCollection quantityFields = $$(quantitySelector);
 
-            for (WebElement field : quantityFields) {
+            for (SelenideElement field : quantityFields) {
                 clear(field);
                 type(field, String.valueOf(newQuantity));
             }
@@ -195,7 +200,7 @@ public class ShoppingCartPage extends BasePage {
     public int getItemQuantity(String productName) {
         try {
             By quantitySelector = By.cssSelector("input[name*='quantity']");
-            WebElement quantityField = findElement(quantitySelector);
+            SelenideElement quantityField = $(quantitySelector);
             String value = getAttribute(quantityField, "value");
             return Integer.parseInt(value);
         } catch (Exception e) {
@@ -226,9 +231,9 @@ public class ShoppingCartPage extends BasePage {
      */
     public int getTotalItemCount() {
         try {
-            List<WebElement> quantityFields = findElements(By.cssSelector("input[name*='quantity']"));
+            ElementsCollection quantityFields = $$(By.cssSelector("input[name*='quantity']"));
             int total = 0;
-            for (WebElement field : quantityFields) {
+            for (SelenideElement field : quantityFields) {
                 String value = getAttribute(field, "value");
                 total += Integer.parseInt(value);
             }
@@ -274,7 +279,7 @@ public class ShoppingCartPage extends BasePage {
     public String getSecondItemName() {
         try {
             By itemNameSelector = By.cssSelector(".product a");
-            List<WebElement> items = findElements(itemNameSelector);
+            ElementsCollection items = $$(itemNameSelector);
             if (items.size() > 1) {
                 return items.get(1).getText();
             }
@@ -291,7 +296,7 @@ public class ShoppingCartPage extends BasePage {
     public String getLastItemName() {
         try {
             By itemNameSelector = By.cssSelector(".product a");
-            List<WebElement> items = findElements(itemNameSelector);
+            ElementsCollection items = $$(itemNameSelector);
             if (!items.isEmpty()) {
                 return items.get(items.size() - 1).getText();
             }
@@ -433,8 +438,8 @@ public class ShoppingCartPage extends BasePage {
     public void clearCart() {
         try {
             // Set all quantities to 0
-            List<WebElement> quantityFields = findElements(By.cssSelector("input[name*='quantity']"));
-            for (WebElement field : quantityFields) {
+            ElementsCollection quantityFields = $$(By.cssSelector("input[name*='quantity']"));
+            for (SelenideElement field : quantityFields) {
                 clear(field);
                 type(field, "0");
             }
@@ -806,10 +811,10 @@ public class ShoppingCartPage extends BasePage {
 
     // Inner class for cart item management
     public static class CartItem {
-        private final WebElement itemElement;
+        private final SelenideElement itemElement;
         private final WebDriver driver;
 
-        public CartItem(WebElement itemElement, WebDriver driver) {
+        public CartItem(SelenideElement itemElement, WebDriver driver) {
             this.itemElement = itemElement;
             this.driver = driver;
         }
@@ -820,7 +825,7 @@ public class ShoppingCartPage extends BasePage {
          */
         public String getProductName() {
             try {
-                WebElement nameElement = itemElement.findElement(
+                SelenideElement nameElement = itemElement.find(
                     SelectorUtils.getCartSelector("cart_and_checkout.shopping_cart.cart_with_items.item_name"));
                 return nameElement.getText();
             } catch (Exception e) {
@@ -834,7 +839,7 @@ public class ShoppingCartPage extends BasePage {
          */
         public BigDecimal getUnitPrice() {
             try {
-                WebElement priceElement = itemElement.findElement(
+                SelenideElement priceElement = itemElement.find(
                     SelectorUtils.getCartSelector("cart_and_checkout.shopping_cart.cart_with_items.item_price"));
                 String priceText = priceElement.getText();
                 return parsePriceString(priceText);
@@ -849,8 +854,7 @@ public class ShoppingCartPage extends BasePage {
          */
         public int getQuantity() {
             try {
-                WebElement qtyInput = itemElement.findElement(
-                    SelectorUtils.getCartSelector("cart_and_checkout.shopping_cart.cart_with_items.quantity_input"));
+                SelenideElement qtyInput = itemElement.$(SelectorUtils.getCartSelector("cart_and_checkout.shopping_cart.cart_with_items.quantity_input"));
                 String qtyValue = qtyInput.getAttribute("value");
                 return Integer.parseInt(qtyValue);
             } catch (Exception e) {
@@ -864,8 +868,7 @@ public class ShoppingCartPage extends BasePage {
          */
         public BigDecimal getItemTotal() {
             try {
-                WebElement totalElement = itemElement.findElement(
-                    SelectorUtils.getCartSelector("cart_and_checkout.shopping_cart.cart_with_items.item_total"));
+                SelenideElement totalElement = itemElement.$(SelectorUtils.getCartSelector("cart_and_checkout.shopping_cart.cart_with_items.item_total"));
                 String totalText = totalElement.getText();
                 return parsePriceString(totalText);
             } catch (Exception e) {
@@ -880,8 +883,7 @@ public class ShoppingCartPage extends BasePage {
          */
         public CartItem updateQuantity(int newQuantity) {
             try {
-                WebElement qtyInput = itemElement.findElement(
-                    SelectorUtils.getCartSelector("cart_and_checkout.shopping_cart.cart_with_items.quantity_input"));
+                SelenideElement qtyInput = itemElement.$(SelectorUtils.getCartSelector("cart_and_checkout.shopping_cart.cart_with_items.quantity_input"));
                 qtyInput.clear();
                 qtyInput.sendKeys(String.valueOf(newQuantity));
             } catch (Exception e) {
@@ -895,8 +897,7 @@ public class ShoppingCartPage extends BasePage {
          */
         public void remove() {
             try {
-                WebElement removeButton = itemElement.findElement(
-                    SelectorUtils.getCartSelector("cart_and_checkout.shopping_cart.cart_with_items.remove_item"));
+                SelenideElement removeButton = itemElement.$(SelectorUtils.getCartSelector("cart_and_checkout.shopping_cart.cart_with_items.remove_item"));
                 removeButton.click();
             } catch (Exception e) {
                 throw new RuntimeException("Could not remove item", e);
@@ -907,8 +908,8 @@ public class ShoppingCartPage extends BasePage {
          * Get product image element
          * @return WebElement for product image
          */
-        public WebElement getProductImage() {
-            return itemElement.findElement(
+        public SelenideElement getProductImage() {
+            return itemElement.find(
                 SelectorUtils.getCartSelector("cart_and_checkout.shopping_cart.cart_with_items.item_image"));
         }
 
@@ -917,7 +918,7 @@ public class ShoppingCartPage extends BasePage {
          * @return ProductDetailsPage
          */
         public ProductDetailsPage clickProductName() {
-            WebElement nameElement = itemElement.findElement(
+            SelenideElement nameElement = itemElement.find(
                 SelectorUtils.getCartSelector("cart_and_checkout.shopping_cart.cart_with_items.item_name"));
             nameElement.click();
             return new ProductDetailsPage(driver);
@@ -927,7 +928,7 @@ public class ShoppingCartPage extends BasePage {
          * Get underlying WebElement
          * @return WebElement representing this cart item
          */
-        public WebElement getElement() {
+        public SelenideElement getElement() {
             return itemElement;
         }
 

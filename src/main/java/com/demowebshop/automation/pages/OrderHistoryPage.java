@@ -3,10 +3,14 @@ package com.demowebshop.automation.pages;
 import com.demowebshop.automation.pages.common.BasePage;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.WebElement;
+import com.codeborne.selenide.SelenideElement;
+import com.codeborne.selenide.ElementsCollection;
 
 import java.util.List;
 import org.openqa.selenium.support.ui.Select;
+
+import static com.codeborne.selenide.Selenide.$;
+import static com.codeborne.selenide.Selenide.$$;
 
 /**
  * Page Object Model for Order History Page
@@ -41,11 +45,11 @@ public class OrderHistoryPage extends BasePage {
     public List<String> getOrderNumbers() {
         try {
             By orderNumberSelector = By.cssSelector(".order-number, .order-id");
-            return findElements(orderNumberSelector).stream()
-                    .map(WebElement::getText)
+            return $$(orderNumberSelector).stream()
+                    .map(SelenideElement::getText)
                     .toList();
         } catch (Exception e) {
-            return List.of();
+            return List.of(); // Empty list
         }
     }
 
@@ -57,7 +61,7 @@ public class OrderHistoryPage extends BasePage {
         try {
             // Use more specific selectors for DemoWebShop order history
             By orderRowSelector = By.cssSelector("table.order-list tr, .order-list-table tr, .data-table tbody tr");
-            WebElement orderTable = waitUtils.softWaitForElementToBeVisible(orderRowSelector, 3);
+            SelenideElement orderTable = $(orderRowSelector);
             return orderTable != null && !findElements(orderRowSelector).isEmpty();
         } catch (Exception e) {
             return false;
@@ -71,7 +75,7 @@ public class OrderHistoryPage extends BasePage {
     public OrderDetailsPage clickFirstOrderDetails() {
         try {
             By detailsSelector = By.cssSelector(".order-details-link, .details-link");
-            List<WebElement> detailsLinks = findElements(detailsSelector);
+            ElementsCollection detailsLinks = $$(detailsSelector);
             if (!detailsLinks.isEmpty()) {
                 detailsLinks.get(0).click();
                 logger.info("Clicked first order details");
@@ -90,7 +94,7 @@ public class OrderHistoryPage extends BasePage {
     public String getFirstOrderStatus() {
         try {
             By statusSelector = By.cssSelector(".order-status");
-            List<WebElement> statuses = findElements(statusSelector);
+            ElementsCollection statuses = $$(statusSelector);
             if (!statuses.isEmpty()) {
                 return statuses.get(0).getText();
             }
@@ -119,7 +123,7 @@ public class OrderHistoryPage extends BasePage {
         try {
             By orderRowSelector = By.cssSelector(".order-list .title, .order-overview-content, .section .order-item");
             // Check if elements exist before waiting for visibility
-            List<WebElement> orderElements = findElements(orderRowSelector);
+            ElementsCollection orderElements = $$(orderRowSelector);
             if (!orderElements.isEmpty()) {
                 try {
                     // Only wait for visibility if elements are found
@@ -142,7 +146,7 @@ public class OrderHistoryPage extends BasePage {
     public String getFirstOrderNumber() {
         try {
             By orderNumberSelector = By.cssSelector(".order-number, .order-id");
-            List<WebElement> orderNumbers = findElements(orderNumberSelector);
+            ElementsCollection orderNumbers = $$(orderNumberSelector);
             if (!orderNumbers.isEmpty()) {
                 return orderNumbers.get(0).getText();
             }
@@ -159,7 +163,7 @@ public class OrderHistoryPage extends BasePage {
     public String getFirstOrderDate() {
         try {
             By orderDateSelector = By.cssSelector(".order-date, .created-on");
-            List<WebElement> orderDates = findElements(orderDateSelector);
+            ElementsCollection orderDates = $$(orderDateSelector);
             if (!orderDates.isEmpty()) {
                 return orderDates.get(0).getText();
             }
@@ -176,7 +180,7 @@ public class OrderHistoryPage extends BasePage {
     public String getFirstOrderTotal() {
         try {
             By orderTotalSelector = By.cssSelector(".order-total, .total");
-            List<WebElement> orderTotals = findElements(orderTotalSelector);
+            ElementsCollection orderTotals = $$(orderTotalSelector);
             if (!orderTotals.isEmpty()) {
                 return orderTotals.get(0).getText();
             }
@@ -194,7 +198,7 @@ public class OrderHistoryPage extends BasePage {
     public OrderDetailsPage getOrderDetails(String orderNumber) {
         try {
             By orderRowSelector = By.xpath("//tr[contains(.,'" + orderNumber + "')]//a[contains(@href,'orderdetails')]");
-            WebElement orderLink = findElement(orderRowSelector);
+            SelenideElement orderLink = $(orderRowSelector);
             orderLink.click();
             logger.info("Clicked order details for order: {}", orderNumber);
             return new OrderDetailsPage(driver);
@@ -221,12 +225,12 @@ public class OrderHistoryPage extends BasePage {
      * Get all order details links
      * @return List of order details links
      */
-    public List<WebElement> getOrderDetailsLinks() {
+    public ElementsCollection getOrderDetailsLinks() {
         try {
             By detailsSelector = By.cssSelector(".order-details-link, .details-link, a[href*='orderdetails']");
-            return findElements(detailsSelector);
+            return $$(detailsSelector);
         } catch (Exception e) {
-            return List.of();
+            return $$(By.cssSelector("nonexistent")); // Empty collection
         }
     }
 
@@ -237,7 +241,7 @@ public class OrderHistoryPage extends BasePage {
      */
     public OrderDetailsPage clickOrderDetails(int index) {
         try {
-            List<WebElement> detailsLinks = getOrderDetailsLinks();
+            ElementsCollection detailsLinks = getOrderDetailsLinks();
             if (index >= 0 && index < detailsLinks.size()) {
                 detailsLinks.get(index).click();
                 logger.info("Clicked order details at index: {}", index);
@@ -257,7 +261,7 @@ public class OrderHistoryPage extends BasePage {
     public String getOrderStatus(int index) {
         try {
             By statusSelector = By.cssSelector(".order-status");
-            List<WebElement> statuses = findElements(statusSelector);
+            ElementsCollection statuses = $$(statusSelector);
             if (index >= 0 && index < statuses.size()) {
                 return statuses.get(index).getText();
             }
@@ -274,7 +278,7 @@ public class OrderHistoryPage extends BasePage {
     public boolean areOrdersSortedByDate() {
         try {
             By orderDateSelector = By.cssSelector(".order-date, .created-on");
-            List<WebElement> orderDates = findElements(orderDateSelector);
+            ElementsCollection orderDates = $$(orderDateSelector);
             // Basic check - assume they are sorted if we have dates
             return orderDates.size() > 0;
         } catch (Exception e) {
@@ -289,7 +293,7 @@ public class OrderHistoryPage extends BasePage {
     public OrderDetailsPage clickFirstOrder() {
         try {
             By firstOrderSelector = By.cssSelector(".order-list .title a, .order-overview-content a, .section .order-item a");
-            List<WebElement> orderLinks = findElements(firstOrderSelector);
+            ElementsCollection orderLinks = $$(firstOrderSelector);
             if (!orderLinks.isEmpty()) {
                 orderLinks.get(0).click();
                 logger.info("Clicked first order");
@@ -309,7 +313,7 @@ public class OrderHistoryPage extends BasePage {
         try {
             // Use soft wait to avoid long timeouts for potentially missing elements
             By emptyMessageSelector = By.cssSelector(".no-data, .no-orders, .empty-list, .no-order-history, .info");
-            WebElement emptyMessage = waitUtils.softWaitForElementToBeVisible(emptyMessageSelector, 2);
+            SelenideElement emptyMessage = $(emptyMessageSelector);
             return emptyMessage != null && emptyMessage.isDisplayed();
         } catch (Exception e) {
             return false;
@@ -397,11 +401,11 @@ public class OrderHistoryPage extends BasePage {
         try {
             By statusOptionsSelector = By.cssSelector(".status-filter option, #status-filter option, .order-status-filter option");
             return findElements(statusOptionsSelector).stream()
-                    .map(WebElement::getText)
+                    .map(SelenideElement::getText)
                     .filter(text -> !text.trim().isEmpty())
                     .toList();
         } catch (Exception e) {
-            return List.of();
+            return List.of(); // Empty list
         }
     }
 
@@ -413,7 +417,7 @@ public class OrderHistoryPage extends BasePage {
     public OrderHistoryPage filterByStatus(String status) {
         try {
             By statusFilterSelector = By.cssSelector(".status-filter, #status-filter, .order-status-filter");
-            WebElement statusFilter = findElement(statusFilterSelector);
+            SelenideElement statusFilter = $(statusFilterSelector);
             Select selectElement = new Select(statusFilter);
             selectElement.selectByVisibleText(status);
             waitForPageToLoad();

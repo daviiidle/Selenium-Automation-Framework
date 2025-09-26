@@ -22,9 +22,11 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
+        <!-- TestNG Suite Configuration -->
+        <suiteXmlFile>src/test/resources/config/testng-powerhouse.xml</suiteXmlFile>
+
         <!-- Dependency Versions -->
-        <selenium.version>4.35.0</selenium.version>
-        <webdrivermanager.version>5.6.2</webdrivermanager.version>
+        <selenide.version>7.5.1</selenide.version>
         <testng.version>7.8.0</testng.version>
         <extentreports.version>5.1.1</extentreports.version>
         <allure.version>2.24.0</allure.version>
@@ -47,18 +49,25 @@
 
     <!-- Dependencies -->
     <dependencies>
-        <!-- Selenium WebDriver -->
+        <!-- Selenide (includes Selenium WebDriver) -->
         <dependency>
-            <groupId>org.seleniumhq.selenium</groupId>
-            <artifactId>selenium-java</artifactId>
-            <version>${selenium.version}</version>
+            <groupId>com.codeborne</groupId>
+            <artifactId>selenide</artifactId>
+            <version>${selenide.version}</version>
         </dependency>
 
-        <!-- WebDriver Manager -->
+        <!-- WebDriver Manager (for explicit driver management if needed) -->
         <dependency>
             <groupId>io.github.bonigarcia</groupId>
             <artifactId>webdrivermanager</artifactId>
-            <version>${webdrivermanager.version}</version>
+            <version>5.6.2</version>
+        </dependency>
+
+        <!-- Chrome DevTools Protocol - Latest version to reduce CDP warnings -->
+        <dependency>
+            <groupId>org.seleniumhq.selenium</groupId>
+            <artifactId>selenium-devtools-v129</artifactId>
+            <version>4.25.0</version>
         </dependency>
 
         <!-- TestNG -->
@@ -152,6 +161,7 @@
             <version>${commons-lang3.version}</version>
         </dependency>
 
+
     </dependencies>
 
     <!-- Build Configuration -->
@@ -175,11 +185,35 @@
                 <version>${maven-surefire-plugin.version}</version>
                 <configuration>
                     <suiteXmlFiles>
-                        <suiteXmlFile>src/test/resources/config/comprehensive-testng.xml</suiteXmlFile>
+                        <suiteXmlFile>${suiteXmlFile}</suiteXmlFile>
                     </suiteXmlFiles>
                     <systemPropertyVariables>
                         <allure.results.directory>${project.build.directory}/allure-results</allure.results.directory>
                     </systemPropertyVariables>
+                    <!-- POWERHOUSE MODE: JVM optimization for Java 21 + Ryzen 3900X + 16GB RAM -->
+                    <argLine>
+                        -Xmx8g
+                        -Xms2g
+                        -XX:+UseG1GC
+                        -XX:+UseStringDeduplication
+                        -XX:MaxGCPauseMillis=100
+                        -XX:G1HeapRegionSize=32m
+                        -XX:+UseCompressedOops
+                        -XX:+UseCompressedClassPointers
+                        -Djava.awt.headless=true
+                        -Dfile.encoding=UTF-8
+                        -Dsun.net.http.allowRestrictedHeaders=true
+                        -Djava.security.egd=file:/dev/./urandom
+                        -Dwebdriver.chrome.whitelistedIps=
+                        -Dwebdriver.chrome.verboseLogging=false
+                        -Djava.net.preferIPv4Stack=true
+                    </argLine>
+                    <parallel>methods</parallel>
+                    <threadCount>12</threadCount>
+                    <perCoreThreadCount>true</perCoreThreadCount>
+                    <useUnlimitedThreads>false</useUnlimitedThreads>
+                    <trimStackTrace>false</trimStackTrace>
+                    <reportFormat>xml</reportFormat>
                 </configuration>
             </plugin>
 

@@ -13,6 +13,7 @@ import org.openqa.selenium.edge.EdgeOptions;
 import org.openqa.selenium.firefox.FirefoxDriver;
 import org.openqa.selenium.firefox.FirefoxOptions;
 import org.openqa.selenium.remote.RemoteWebDriver;
+import com.codeborne.selenide.WebDriverRunner;
 
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -21,6 +22,7 @@ import java.time.Duration;
 /**
  * Factory class for creating and managing WebDriver instances
  * Supports Chrome, Firefox, Edge browsers with local and remote execution
+ * Integrated with Selenide for enhanced test automation capabilities
  */
 public class WebDriverFactory {
     private static final Logger logger = LogManager.getLogger(WebDriverFactory.class);
@@ -48,7 +50,10 @@ public class WebDriverFactory {
             configureDriver(driver);
             driverThreadLocal.set(driver);
 
-            logger.info("Created {} driver successfully", browserType);
+            // Set the WebDriver instance for Selenide
+            WebDriverRunner.setWebDriver(driver);
+
+            logger.info("Created {} driver successfully and configured for Selenide", browserType);
 
         } catch (Exception e) {
             logger.error("Failed to create {} driver: {}", browserType, e.getMessage());
@@ -113,14 +118,16 @@ public class WebDriverFactory {
         driver.manage().timeouts().pageLoadTimeout(Duration.ofSeconds(ConfigManager.getPageLoadTimeout()));
         driver.manage().timeouts().scriptTimeout(Duration.ofSeconds(ConfigManager.getScriptTimeout()));
 
-        // Maximize window if configured
-        if (ConfigManager.shouldMaximizeWindow()) {
-            driver.manage().window().maximize();
-        }
+        // Skip window maximization in headless mode to prevent errors
+        logger.debug("Skipping window maximization in headless mode");
 
         // Delete all cookies if configured
         if (ConfigManager.shouldDeleteCookies()) {
-            driver.manage().deleteAllCookies();
+            try {
+                driver.manage().deleteAllCookies();
+            } catch (Exception e) {
+                logger.warn("Failed to delete cookies, continuing: {}", e.getMessage());
+            }
         }
     }
 
@@ -131,37 +138,21 @@ public class WebDriverFactory {
     private static ChromeOptions getChromeOptions() {
         ChromeOptions options = new ChromeOptions();
 
-        if (ConfigManager.isHeadlessMode()) {
-            options.addArguments("--headless=new");
-        }
+        // Force headless mode for stability in parallel execution
+        options.addArguments("--headless=new");
+        options.addArguments("--window-size=1920,1080");
 
-        // Common Chrome arguments for stability
+        // Essential Chrome arguments for headless stability
         options.addArguments("--no-sandbox");
         options.addArguments("--disable-dev-shm-usage");
         options.addArguments("--disable-gpu");
         options.addArguments("--disable-extensions");
         options.addArguments("--disable-infobars");
-        options.addArguments("--disable-notifications");
-        options.addArguments("--disable-popup-blocking");
-        options.addArguments("--start-maximized");
-
-        // Performance optimizations for faster test execution
-        options.addArguments("--enable-automation");
-        options.addArguments("--disable-blink-features=AutomationControlled");
+        options.addArguments("--remote-debugging-port=0");
         options.addArguments("--disable-web-security");
         options.addArguments("--disable-features=VizDisplayCompositor");
-        options.addArguments("--disable-logging");
-        options.addArguments("--disable-default-apps");
-        options.addArguments("--disable-background-timer-throttling");
-        options.addArguments("--disable-renderer-backgrounding");
-        options.addArguments("--disable-backgrounding-occluded-windows");
-        options.addArguments("--disable-hang-monitor");
-        options.addArguments("--disable-prompt-on-repost");
-        options.addArguments("--disable-sync");
-        options.addArguments("--force-device-scale-factor=1");
-        options.addArguments("--aggressive-cache-discard");
         options.setExperimentalOption("useAutomationExtension", false);
-        options.setExperimentalOption("excludeSwitches", new String[]{"enable-automation", "enable-logging"});
+        options.setExperimentalOption("excludeSwitches", new String[]{"enable-automation"});
 
         return options;
     }
@@ -173,9 +164,9 @@ public class WebDriverFactory {
     private static FirefoxOptions getFirefoxOptions() {
         FirefoxOptions options = new FirefoxOptions();
 
-        if (ConfigManager.isHeadlessMode()) {
-            options.addArguments("--headless");
-        }
+        // Force headless mode for stability in parallel execution
+        options.addArguments("--headless");
+        options.addArguments("--window-size=1920,1080");
 
         // Common Firefox preferences for speed
         options.addPreference("dom.webnotifications.enabled", false);
@@ -188,6 +179,23 @@ public class WebDriverFactory {
         options.addPreference("network.http.pipelining.maxrequests", 10);
         options.addPreference("nglayout.initialpaint.delay", 0);
 
+        // POWERHOUSE MODE: Ultra-aggressive Firefox optimizations
+        options.addPreference("content.notify.interval", 500000);
+        options.addPreference("content.notify.ontimer", true);
+        options.addPreference("content.switch.threshold", 500000);
+        options.addPreference("browser.cache.memory.capacity", 65536);
+        options.addPreference("browser.startup.homepage", "about:blank");
+        options.addPreference("browser.display.show_image_placeholders", false);
+        options.addPreference("browser.turbo.enabled", true);
+        options.addPreference("dom.disable_window_status_change", true);
+        options.addPreference("dom.disable_window_move_resize", true);
+        options.addPreference("network.http.max-connections", 48);
+        options.addPreference("network.http.max-connections-per-server", 16);
+        options.addPreference("network.http.max-persistent-connections-per-server", 8);
+        options.addPreference("content.interrupt.parsing", true);
+        options.addPreference("content.max.tokenizing.time", 2250000);
+        options.addPreference("content.switch.threshold", 750000);
+
         return options;
     }
 
@@ -198,9 +206,9 @@ public class WebDriverFactory {
     private static EdgeOptions getEdgeOptions() {
         EdgeOptions options = new EdgeOptions();
 
-        if (ConfigManager.isHeadlessMode()) {
-            options.addArguments("--headless");
-        }
+        // Force headless mode for stability in parallel execution
+        options.addArguments("--headless");
+        options.addArguments("--window-size=1920,1080");
 
         // Common Edge arguments for speed
         options.addArguments("--no-sandbox");
@@ -212,6 +220,21 @@ public class WebDriverFactory {
         options.addArguments("--disable-default-apps");
         options.addArguments("--disable-background-timer-throttling");
         options.addArguments("--disable-renderer-backgrounding");
+
+        // POWERHOUSE MODE: Ultra-aggressive Edge optimizations
+        options.addArguments("--memory-pressure-off");
+        options.addArguments("--max_old_space_size=4096");
+        options.addArguments("--no-first-run");
+        options.addArguments("--disable-background-mode");
+        options.addArguments("--disable-translate");
+        options.addArguments("--disable-ipc-flooding-protection");
+        options.addArguments("--disable-component-extensions-with-background-pages");
+        options.addArguments("--disable-client-side-phishing-detection");
+        options.addArguments("--disable-permissions-api");
+        options.addArguments("--fast-start");
+        options.addArguments("--aggressive");
+        options.addArguments("--disable-domain-reliability");
+        options.addArguments("--renderer-process-limit=1");
 
         return options;
     }
@@ -226,17 +249,25 @@ public class WebDriverFactory {
 
     /**
      * Quits the current thread's WebDriver instance and removes it from ThreadLocal
+     * Selenide-aware cleanup to prevent double cleanup issues
      */
     public static void quitDriver() {
         WebDriver driver = driverThreadLocal.get();
         if (driver != null) {
             try {
+                // Skip window operations that may fail in headless/crashed browsers
                 driver.quit();
                 logger.info("WebDriver quit successfully");
             } catch (Exception e) {
-                logger.error("Error while quitting WebDriver: {}", e.getMessage());
+                logger.warn("WebDriver quit with error (normal for crashed sessions): {}", e.getMessage());
             } finally {
                 driverThreadLocal.remove();
+                // Clear Selenide's WebDriver reference safely
+                try {
+                    WebDriverRunner.closeWebDriver();
+                } catch (Exception e) {
+                    logger.debug("Selenide WebDriver already cleaned up: {}", e.getMessage());
+                }
             }
         }
     }

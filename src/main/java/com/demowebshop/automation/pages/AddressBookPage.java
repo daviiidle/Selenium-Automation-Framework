@@ -4,8 +4,13 @@ import com.demowebshop.automation.pages.common.BasePage;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
+import com.codeborne.selenide.SelenideElement;
+import com.codeborne.selenide.ElementsCollection;
 
 import java.util.List;
+
+import static com.codeborne.selenide.Selenide.$;
+import static com.codeborne.selenide.Selenide.$$;
 
 /**
  * Page Object Model for Address Book Page
@@ -103,7 +108,7 @@ public class AddressBookPage extends BasePage {
     public EditAddressPage clickEditFirstAddress() {
         try {
             By editSelector = By.cssSelector(".edit-address-button, input[value*='Edit']");
-            List<WebElement> editButtons = findElements(editSelector);
+            ElementsCollection editButtons = $$(editSelector);
             if (!editButtons.isEmpty()) {
                 editButtons.get(0).click();
                 logger.info("Clicked edit first address");
@@ -122,7 +127,7 @@ public class AddressBookPage extends BasePage {
     public AddressBookPage clickDeleteFirstAddress() {
         try {
             By deleteSelector = By.cssSelector(".delete-address-button, input[value*='Delete']");
-            List<WebElement> deleteButtons = findElements(deleteSelector);
+            ElementsCollection deleteButtons = $$(deleteSelector);
             if (!deleteButtons.isEmpty()) {
                 deleteButtons.get(0).click();
                 waitForPageToLoad();
@@ -161,7 +166,7 @@ public class AddressBookPage extends BasePage {
     public EditAddressPage clickEditAddress(int index) {
         try {
             By editSelector = By.cssSelector(".edit-address-button, input[value*='Edit']");
-            List<WebElement> editButtons = findElements(editSelector);
+            ElementsCollection editButtons = $$(editSelector);
             if (index >= 0 && index < editButtons.size()) {
                 editButtons.get(index).click();
                 logger.info("Clicked edit address at index: {}", index);
@@ -181,7 +186,7 @@ public class AddressBookPage extends BasePage {
     public AddressBookPage clickDeleteAddress(int index) {
         try {
             By deleteSelector = By.cssSelector(".delete-address-button, input[value*='Delete']");
-            List<WebElement> deleteButtons = findElements(deleteSelector);
+            ElementsCollection deleteButtons = $$(deleteSelector);
             if (index >= 0 && index < deleteButtons.size()) {
                 deleteButtons.get(index).click();
                 logger.info("Clicked delete address at index: {}", index);
@@ -320,7 +325,7 @@ public class AddressBookPage extends BasePage {
     public AddressBookPage deleteLastAddress() {
         try {
             By deleteSelector = By.cssSelector(".delete-address-button, input[value*='Delete']");
-            List<WebElement> deleteButtons = findElements(deleteSelector);
+            ElementsCollection deleteButtons = $$(deleteSelector);
             if (!deleteButtons.isEmpty()) {
                 int lastIndex = deleteButtons.size() - 1;
                 deleteButtons.get(lastIndex).click();
@@ -426,7 +431,7 @@ public class AddressBookPage extends BasePage {
     public AddressBookPage setFirstAddressAsDefault() {
         try {
             By setDefaultSelector = By.cssSelector(".set-default-button, input[value*='Set as default'], .default-address-button");
-            List<WebElement> defaultButtons = findElements(setDefaultSelector);
+            ElementsCollection defaultButtons = $$(setDefaultSelector);
             if (!defaultButtons.isEmpty()) {
                 defaultButtons.get(0).click();
                 logger.info("Set first address as default");
