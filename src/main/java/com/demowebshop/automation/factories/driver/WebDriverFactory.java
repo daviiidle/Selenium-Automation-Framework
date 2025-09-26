@@ -145,7 +145,7 @@ public class WebDriverFactory {
         options.addArguments("--disable-popup-blocking");
         options.addArguments("--start-maximized");
 
-        // Performance optimizations
+        // Performance optimizations for faster test execution
         options.addArguments("--enable-automation");
         options.addArguments("--disable-blink-features=AutomationControlled");
         options.addArguments("--disable-web-security");
@@ -155,6 +155,10 @@ public class WebDriverFactory {
         options.addArguments("--disable-background-timer-throttling");
         options.addArguments("--disable-renderer-backgrounding");
         options.addArguments("--disable-backgrounding-occluded-windows");
+        options.addArguments("--disable-hang-monitor");
+        options.addArguments("--disable-prompt-on-repost");
+        options.addArguments("--disable-sync");
+        options.addArguments("--force-device-scale-factor=1");
         options.addArguments("--aggressive-cache-discard");
         options.setExperimentalOption("useAutomationExtension", false);
         options.setExperimentalOption("excludeSwitches", new String[]{"enable-automation", "enable-logging"});

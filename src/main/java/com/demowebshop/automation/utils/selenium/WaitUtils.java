@@ -467,4 +467,81 @@ public class WaitUtils {
             throw e;
         }
     }
+
+    /**
+     * Softly wait for elements with multiple selectors (navigation-friendly)
+     * Tries each selector with short timeout to avoid long waits
+     * @param selectors Array of CSS selectors to try
+     * @param shortTimeout Short timeout for each selector
+     * @return First found elements list, or empty list if none found
+     */
+    public List<WebElement> softWaitForElementsWithMultipleSelectors(String[] selectors, int shortTimeout) {
+        for (String selector : selectors) {
+            try {
+                By locator = By.cssSelector(selector);
+                List<WebElement> elements = softWaitForElementsToBeVisible(locator, shortTimeout);
+                if (elements != null && !elements.isEmpty()) {
+                    logger.debug("Found elements with selector: {}", selector);
+                    return elements;
+                }
+            } catch (Exception ignored) {
+                // Continue to next selector
+            }
+        }
+        logger.debug("No elements found with any of the selectors within {} seconds each", shortTimeout);
+        return List.of(); // Return empty list instead of null
+    }
+
+    /**
+     * Softly wait for elements to be visible (returns empty list if not found, doesn't throw exception)
+     * @param locator Element locator
+     * @param timeoutInSeconds Custom timeout
+     * @return List of WebElements if found and visible, empty list otherwise
+     */
+    public List<WebElement> softWaitForElementsToBeVisible(By locator, int timeoutInSeconds) {
+        try {
+            WebDriverWait customWait = new WebDriverWait(driver, Duration.ofSeconds(timeoutInSeconds));
+            return customWait.until(ExpectedConditions.visibilityOfAllElementsLocatedBy(locator));
+        } catch (TimeoutException e) {
+            logger.debug("Elements not visible within {} seconds (soft wait): {}", timeoutInSeconds, locator);
+            return List.of();
+        } catch (Exception e) {
+            logger.debug("Error waiting for elements (soft wait): {} - {}", locator, e.getMessage());
+            return List.of();
+        }
+    }
+
+    /**
+     * Navigation-friendly wait that tries common navigation selectors
+     * @return List of navigation elements if found
+     */
+    public List<WebElement> waitForNavigationElements() {
+        String[] navigationSelectors = {
+            ".header-menu a",
+            ".top-menu a",
+            ".header-links a",
+            ".navigation a",
+            ".main-menu a",
+            ".menu a",
+            "nav a",
+            "header a"
+        };
+        return softWaitForElementsWithMultipleSelectors(navigationSelectors, 2);
+    }
+
+    /**
+     * Address page friendly wait that tries common address selectors
+     * @return List of address elements if found
+     */
+    public List<WebElement> waitForAddressElements() {
+        String[] addressSelectors = {
+            ".address-list .address-item",
+            ".customer-addresses .address",
+            ".address-list .section",
+            ".addresses .address-box",
+            ".address-container .address",
+            ".account-addresses .address"
+        };
+        return softWaitForElementsWithMultipleSelectors(addressSelectors, 3);
+    }
 }

@@ -65,10 +65,46 @@ public class HomePage extends BasePage {
      * @return LoginPage instance
      */
     public LoginPage clickLoginLink() {
-        By loginSelector = SelectorUtils.getHomepageSelector("homepage.header.login_link");
-        click(loginSelector);
-        logger.info("Clicked login link");
-        return new LoginPage(driver);
+        try {
+            // Try multiple selectors in order of preference
+            String[] loginSelectors = {
+                "a[href='/login']",
+                "a[href*='login']",
+                ".header-links a:contains('Log in')",
+                "//a[contains(text(), 'Log in')]",
+                "//a[contains(@href, 'login')]"
+            };
+
+            for (String selector : loginSelectors) {
+                try {
+                    By loginBy;
+                    if (selector.startsWith("//")) {
+                        loginBy = By.xpath(selector);
+                    } else {
+                        loginBy = By.cssSelector(selector);
+                    }
+
+                    // Use enhanced click with locator-based retry
+                    elementUtils.clickElement(loginBy);
+                    logger.info("Successfully clicked login link using selector: {}", selector);
+                    return new LoginPage(driver);
+                } catch (Exception e) {
+                    logger.debug("Login selector failed: {} - {}", selector, e.getMessage());
+                    // Continue to next selector
+                }
+            }
+
+            // If all specific selectors fail, try generic approach
+            logger.warn("All specific login selectors failed, trying text-based approach");
+            By textBasedSelector = By.xpath("//a[contains(text(), 'Log in') or contains(text(), 'LOGIN') or contains(text(), 'log in')]");
+            elementUtils.clickElement(textBasedSelector);
+            logger.info("Clicked login link using text-based fallback");
+            return new LoginPage(driver);
+
+        } catch (Exception e) {
+            logger.error("Failed to click login link after all attempts: {}", e.getMessage());
+            throw new RuntimeException("Login link not found or clickable", e);
+        }
     }
 
     /**
@@ -639,20 +675,44 @@ public class HomePage extends BasePage {
      */
     public HomePage clickLogoutLink() {
         try {
-            // Try primary selector first
-            By logoutSelector = By.cssSelector("a[href='/logout']");
-            if (isElementDisplayed(logoutSelector)) {
-                click(logoutSelector);
-                logger.info("Clicked logout link using primary selector");
-                return new HomePage(driver);
+            // Try multiple selectors in order of preference
+            String[] logoutSelectors = {
+                "a[href='/logout']",
+                "a[href*='logout']",
+                ".header-links a:contains('Log out')",
+                "//a[contains(text(), 'Log out')]",
+                "//a[contains(@href, 'logout')]",
+                "//a[text()='Log out']"
+            };
+
+            for (String selector : logoutSelectors) {
+                try {
+                    By logoutBy;
+                    if (selector.startsWith("//")) {
+                        logoutBy = By.xpath(selector);
+                    } else {
+                        logoutBy = By.cssSelector(selector);
+                    }
+
+                    // Use enhanced click with locator-based retry
+                    elementUtils.clickElement(logoutBy);
+                    logger.info("Successfully clicked logout link using selector: {}", selector);
+                    return new HomePage(driver);
+                } catch (Exception e) {
+                    logger.debug("Logout selector failed: {} - {}", selector, e.getMessage());
+                    // Continue to next selector
+                }
             }
-            // Fallback to text-based selector
-            By textBasedSelector = By.xpath("//a[contains(text(), 'Log out')]");
-            click(textBasedSelector);
-            logger.info("Clicked logout link using text-based selector");
+
+            // If all specific selectors fail, try generic approach
+            logger.warn("All specific logout selectors failed, trying text-based approach");
+            By textBasedSelector = By.xpath("//a[contains(text(), 'Log out') or contains(text(), 'LOGOUT') or contains(text(), 'logout')]");
+            elementUtils.clickElement(textBasedSelector);
+            logger.info("Clicked logout link using text-based fallback");
             return new HomePage(driver);
+
         } catch (Exception e) {
-            logger.warn("Could not click logout link: {}", e.getMessage());
+            logger.error("Failed to click logout link after all attempts: {}", e.getMessage());
             throw new RuntimeException("Logout link not found or clickable", e);
         }
     }

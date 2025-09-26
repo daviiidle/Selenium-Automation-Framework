@@ -336,9 +336,18 @@ public class ComprehensiveLoginTests extends BaseTest {
     @Override
     protected void additionalTeardown() {
         // Ensure user is logged out after each test
-        if (homePage != null && homePage.isUserLoggedIn()) {
-            logger.info("Logging out user after test completion");
-            homePage.clickLogoutLink();
+        try {
+            if (homePage != null && homePage.isLogoutLinkDisplayed()) {
+                logger.info("Logging out user after test completion");
+                homePage.clickLogoutLink();
+                logger.info("User successfully logged out in teardown");
+            } else if (homePage != null && !homePage.isLoginLinkDisplayed()) {
+                logger.info("User appears to be logged in but logout link not found, navigating to home page");
+                homePage.navigateToHomePage();
+            }
+        } catch (Exception e) {
+            logger.error("Error during teardown: {}", e.getMessage());
+            // Don't rethrow - teardown should not fail the test
         }
     }
 }

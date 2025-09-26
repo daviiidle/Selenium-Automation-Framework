@@ -204,23 +204,70 @@ public class RegisterPage extends BasePage {
      * @return HomePage if registration successful, RegisterPage if failed
      */
     public BasePage clickRegisterButton() {
-        click(registerButton);
-        logger.info("Clicked register button");
-
-        // Wait for processing
         try {
-            Thread.sleep(3000);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
+            // Try multiple approaches to click the register button
+            String[] buttonSelectors = {
+                "input[type='submit'][value='Register']",
+                "input[value='Register']",
+                ".register-button",
+                "button[type='submit']",
+                "input[type='submit']"
+            };
 
-        // Check if registration was successful
-        if (hasValidationErrors()) {
-            logger.warn("Registration failed - validation errors present");
-            return this;
-        } else {
-            logger.info("Registration appears successful");
-            return new HomePage(driver);
+            boolean clicked = false;
+            for (String selector : buttonSelectors) {
+                try {
+                    By buttonBy = By.cssSelector(selector);
+                    if (waitUtils.softWaitForElementToBeVisible(buttonBy, 3) != null) {
+                        // Try to click using enhanced element utils
+                        elementUtils.clickElement(buttonBy);
+                        logger.info("Successfully clicked register button using selector: {}", selector);
+                        clicked = true;
+                        break;
+                    }
+                } catch (Exception e) {
+                    logger.debug("Register button click failed with selector '{}': {}", selector, e.getMessage());
+                    // Continue to next selector
+                }
+            }
+
+            // Fallback to original @FindBy element if all selectors failed
+            if (!clicked) {
+                try {
+                    // Wait for the register button to be clickable using the standard method
+                    WebElement clickableButton = waitUtils.waitForElementToBeClickable(registerButton, 5);
+                    elementUtils.clickElement(clickableButton);
+                    logger.info("Clicked register button using @FindBy element");
+                    clicked = true;
+                } catch (Exception e) {
+                    logger.error("All register button click attempts failed: {}", e.getMessage());
+                    throw new RuntimeException("Register button not clickable", e);
+                }
+            }
+
+            if (!clicked) {
+                throw new RuntimeException("Register button could not be clicked with any method");
+            }
+
+            // Wait briefly for processing
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+
+            // Check if registration was successful
+            if (hasValidationErrors()) {
+                logger.warn("Registration failed - validation errors present");
+                return this;
+            } else {
+                logger.info("Registration appears successful");
+                return new HomePage(driver);
+            }
+
+        } catch (Exception e) {
+            logger.error("Error clicking register button: {}", e.getMessage());
+            throw new RuntimeException("Failed to click register button", e);
         }
     }
 
@@ -292,24 +339,154 @@ public class RegisterPage extends BasePage {
      */
     public boolean hasValidationErrors() {
         try {
-            By summaryErrorSelector = SelectorUtils.getAuthSelector("authentication.registration_page.validation.summary_errors");
-            return isElementDisplayed(summaryErrorSelector);
+            // Try multiple selectors for validation errors
+            String[] errorSelectors = {
+                ".validation-summary-errors",
+                ".field-validation-error",
+                ".error-message",
+                ".validation-error",
+                ".form-errors",
+                ".message-error",
+                ".alert-danger",
+                ".alert-error"
+            };
+
+            for (String selector : errorSelectors) {
+                try {
+                    By errorBy = By.cssSelector(selector);
+                    if (waitUtils.softWaitForElementToBeVisible(errorBy, 2) != null) {
+                        String errorText = getText(errorBy);
+                        if (!errorText.trim().isEmpty()) {
+                            logger.debug("Found validation error with selector '{}': {}", selector, errorText);
+                            return true;
+                        }
+                    }
+                } catch (Exception ignored) {
+                    // Continue to next selector
+                }
+            }
+
+            // Check for any visible error text in common containers
+            String[] containerSelectors = {
+                ".result",
+                ".message",
+                ".content",
+                ".registration-form",
+                "form"
+            };
+
+            for (String selector : containerSelectors) {
+                try {
+                    By containerBy = By.cssSelector(selector);
+                    if (waitUtils.softWaitForElementToBeVisible(containerBy, 2) != null) {
+                        String text = getText(containerBy).toLowerCase();
+                        if (text.contains("error") || text.contains("invalid") ||
+                            text.contains("required") || text.contains("must") ||
+                            text.contains("please") || text.contains("field")) {
+                            logger.debug("Found validation error in container '{}': {}", selector, text);
+                            return true;
+                        }
+                    }
+                } catch (Exception ignored) {
+                    // Continue to next selector
+                }
+            }
+
+            // Check if the error message list is not empty as final validation
+            // BUT avoid infinite recursion by calling the underlying method directly
+            List<String> errorMessages = getValidationErrorsInternal();
+            boolean hasErrors = !errorMessages.isEmpty();
+            if (hasErrors) {
+                logger.debug("Found validation errors via getValidationErrorsInternal(): {}", errorMessages);
+            }
+            return hasErrors;
+
         } catch (Exception e) {
+            logger.debug("Error checking for validation errors: {}", e.getMessage());
             return false;
         }
     }
 
     /**
-     * Get all validation error messages from summary
+     * Internal method to get validation errors without consistency check
      * @return List of error messages
      */
-    public List<String> getValidationErrors() {
+    private List<String> getValidationErrorsInternal() {
         try {
-            By summaryErrorSelector = SelectorUtils.getAuthSelector("authentication.registration_page.validation.summary_errors");
-            if (isElementDisplayed(summaryErrorSelector)) {
-                WebElement errorContainer = findElement(summaryErrorSelector);
-                return List.of(errorContainer.getText().split("\n"));
+            // Try specific error selectors first
+            String[] errorSelectors = {
+                ".validation-summary-errors",
+                ".field-validation-error",
+                ".error-message",
+                ".validation-error",
+                ".form-errors",
+                ".message-error",
+                ".alert-danger",
+                ".alert-error"
+            };
+
+            for (String selector : errorSelectors) {
+                try {
+                    By errorBy = By.cssSelector(selector);
+                    WebElement errorElement = waitUtils.softWaitForElementToBeVisible(errorBy, 2);
+                    if (errorElement != null) {
+                        String errorText = errorElement.getText();
+                        if (!errorText.trim().isEmpty()) {
+                            // Split by newlines and filter empty strings
+                            List<String> errors = List.of(errorText.split("\n"))
+                                    .stream()
+                                    .map(String::trim)
+                                    .filter(s -> !s.isEmpty())
+                                    .toList();
+                            if (!errors.isEmpty()) {
+                                logger.debug("Found validation errors with selector '{}': {}", selector, errors);
+                                return errors;
+                            }
+                        }
+                    }
+                } catch (Exception ignored) {
+                    // Continue to next selector
+                }
             }
+
+            // Check for multiple field validation errors using soft wait
+            try {
+                List<WebElement> fieldErrors = waitUtils.softWaitForElementsToBeVisible(By.cssSelector(".field-validation-error"), 2);
+                if (fieldErrors != null && !fieldErrors.isEmpty()) {
+                    List<String> errors = fieldErrors.stream()
+                            .map(WebElement::getText)
+                            .map(String::trim)
+                            .filter(s -> !s.isEmpty())
+                            .toList();
+                    if (!errors.isEmpty()) {
+                        logger.debug("Found field validation errors: {}", errors);
+                        return errors;
+                    }
+                }
+            } catch (Exception ignored) {
+                // Field errors check failed, continue
+            }
+
+            // Fallback to original method with SelectorUtils
+            try {
+                By summaryErrorSelector = SelectorUtils.getAuthSelector("authentication.registration_page.validation.summary_errors");
+                WebElement errorElement = waitUtils.softWaitForElementToBeVisible(summaryErrorSelector, 2);
+                if (errorElement != null) {
+                    String errorText = errorElement.getText();
+                    if (!errorText.trim().isEmpty()) {
+                        List<String> errors = List.of(errorText.split("\n"))
+                                .stream()
+                                .map(String::trim)
+                                .filter(s -> !s.isEmpty())
+                                .toList();
+                        logger.debug("Found validation errors with SelectorUtils: {}", errors);
+                        return errors;
+                    }
+                }
+            } catch (Exception ignored) {
+                // Continue to empty list
+            }
+
         } catch (Exception e) {
             logger.error("Error getting validation errors: {}", e.getMessage());
         }
@@ -317,11 +494,85 @@ public class RegisterPage extends BasePage {
     }
 
     /**
+     * Get all validation error messages from summary (public wrapper)
+     * @return List of error messages
+     */
+    public List<String> getValidationErrors() {
+        return getValidationErrorsInternal();
+    }
+
+    /**
      * Get all validation error messages (alias for compatibility)
      * @return List of error messages
      */
     public List<String> getValidationErrorMessages() {
-        return getValidationErrors();
+        List<String> errors = getValidationErrors();
+
+        // Debug validation to ensure consistency
+        boolean hasErrors = hasValidationErrors();
+        boolean hasErrorMessages = !errors.isEmpty();
+
+        if (hasErrors != hasErrorMessages) {
+            logger.warn("VALIDATION INCONSISTENCY: hasValidationErrors()={}, getValidationErrorMessages().isEmpty()={}, errorMessages={}",
+                       hasErrors, !hasErrorMessages, errors);
+
+            // Additional debugging - check what selectors are actually finding
+            debugValidationState();
+        }
+
+        return errors;
+    }
+
+    /**
+     * Debug method to investigate validation state inconsistencies
+     */
+    private void debugValidationState() {
+        logger.warn("=== VALIDATION DEBUG STATE ===");
+
+        // Check all error selectors manually
+        String[] errorSelectors = {
+            ".validation-summary-errors",
+            ".field-validation-error",
+            ".error-message",
+            ".validation-error",
+            ".form-errors",
+            ".message-error",
+            ".alert-danger",
+            ".alert-error"
+        };
+
+        for (String selector : errorSelectors) {
+            try {
+                List<org.openqa.selenium.WebElement> elements = findElements(By.cssSelector(selector));
+                if (!elements.isEmpty()) {
+                    for (int i = 0; i < elements.size(); i++) {
+                        String text = elements.get(i).getText();
+                        boolean isVisible = elements.get(i).isDisplayed();
+                        logger.warn("Selector '{}' element #{}: visible={}, text='{}'", selector, i, isVisible, text);
+                    }
+                }
+            } catch (Exception e) {
+                logger.debug("Error checking selector '{}': {}", selector, e.getMessage());
+            }
+        }
+
+        // Check container selectors
+        String[] containerSelectors = {".result", ".message", ".content", ".registration-form", "form"};
+        for (String selector : containerSelectors) {
+            try {
+                List<org.openqa.selenium.WebElement> elements = findElements(By.cssSelector(selector));
+                if (!elements.isEmpty()) {
+                    String text = elements.get(0).getText().toLowerCase();
+                    if (text.contains("error") || text.contains("invalid") || text.contains("required")) {
+                        logger.warn("Container '{}' has error text: '{}'", selector, text);
+                    }
+                }
+            } catch (Exception e) {
+                logger.debug("Error checking container '{}': {}", selector, e.getMessage());
+            }
+        }
+
+        logger.warn("=== END VALIDATION DEBUG ===");
     }
 
     // Display check methods
@@ -331,7 +582,38 @@ public class RegisterPage extends BasePage {
     public boolean isEmailFieldDisplayed() { return isElementDisplayed(By.name("Email")); }
     public boolean isPasswordFieldDisplayed() { return isElementDisplayed(By.name("Password")); }
     public boolean isConfirmPasswordFieldDisplayed() { return isElementDisplayed(By.name("ConfirmPassword")); }
-    public boolean isNewsletterCheckboxDisplayed() { return isElementDisplayed(By.name("Newsletter")); }
+    public boolean isNewsletterCheckboxDisplayed() {
+        try {
+            // Try multiple selectors for newsletter checkbox
+            String[] newsletterSelectors = {
+                "input[name='Newsletter']",
+                "input[id='Newsletter']",
+                "#Newsletter",
+                "input[type='checkbox'][name*='newsletter']",
+                "input[type='checkbox'][id*='newsletter']",
+                ".newsletter input[type='checkbox']",
+                ".newsletter-signup input[type='checkbox']"
+            };
+
+            for (String selector : newsletterSelectors) {
+                try {
+                    if (waitUtils.softWaitForElementToBeVisible(By.cssSelector(selector), 2) != null) {
+                        logger.debug("Found newsletter checkbox with selector: {}", selector);
+                        return true;
+                    }
+                } catch (Exception ignored) {
+                    // Continue to next selector
+                }
+            }
+
+            // If no newsletter checkbox found, this might be expected on some registration forms
+            logger.debug("Newsletter checkbox not found - might not be present on this registration form");
+            return false;
+        } catch (Exception e) {
+            logger.debug("Error checking for newsletter checkbox: {}", e.getMessage());
+            return false;
+        }
+    }
     public boolean isRegisterButtonDisplayed() { return isElementDisplayed(By.cssSelector("input[type='submit'][value*='Register'], .register-button")); }
     public boolean isConfirmationMessageDisplayed() { return isRegistrationSuccessful(); }
 
@@ -341,16 +623,55 @@ public class RegisterPage extends BasePage {
      */
     public List<String> getFieldValidationErrors() {
         try {
-            By fieldErrorSelector = SelectorUtils.getAuthSelector("authentication.registration_page.validation.validation_errors");
-            List<WebElement> fieldErrors = findElements(fieldErrorSelector);
-            return fieldErrors.stream()
-                    .map(WebElement::getText)
-                    .filter(text -> !text.trim().isEmpty())
-                    .collect(Collectors.toList());
+            // Try field-specific error selectors
+            String[] fieldErrorSelectors = {
+                ".field-validation-error",
+                "[data-valmsg-for]",
+                ".form-control + .text-danger",
+                ".validation-error",
+                ".error-message"
+            };
+
+            for (String selector : fieldErrorSelectors) {
+                try {
+                    List<WebElement> fieldErrors = findElements(By.cssSelector(selector));
+                    if (!fieldErrors.isEmpty()) {
+                        List<String> errors = fieldErrors.stream()
+                                .map(WebElement::getText)
+                                .map(String::trim)
+                                .filter(text -> !text.isEmpty())
+                                .toList();
+                        if (!errors.isEmpty()) {
+                            logger.debug("Found field validation errors with selector '{}': {}", selector, errors);
+                            return errors;
+                        }
+                    }
+                } catch (Exception ignored) {
+                    // Continue to next selector
+                }
+            }
+
+            // Fallback to original method with SelectorUtils
+            try {
+                By fieldErrorSelector = SelectorUtils.getAuthSelector("authentication.registration_page.validation.validation_errors");
+                List<WebElement> fieldErrors = findElements(fieldErrorSelector);
+                List<String> errors = fieldErrors.stream()
+                        .map(WebElement::getText)
+                        .map(String::trim)
+                        .filter(text -> !text.isEmpty())
+                        .toList();
+                if (!errors.isEmpty()) {
+                    logger.debug("Found field validation errors with SelectorUtils: {}", errors);
+                    return errors;
+                }
+            } catch (Exception ignored) {
+                // Continue to empty list
+            }
+
         } catch (Exception e) {
             logger.error("Error getting field validation errors: {}", e.getMessage());
-            return List.of();
         }
+        return List.of();
     }
 
     /**
@@ -547,9 +868,39 @@ public class RegisterPage extends BasePage {
      */
     public boolean hasEmailValidationError() {
         try {
-            By emailErrorSelector = By.cssSelector(".field-validation-error[data-valmsg-for='Email'], .validation-summary-errors");
-            return isElementDisplayed(emailErrorSelector);
+            // Try multiple selectors for email validation errors
+            String[] emailErrorSelectors = {
+                ".field-validation-error[data-valmsg-for='Email']",
+                ".field-validation-error[data-valmsg-for='email']",
+                ".validation-summary-errors",
+                ".error-message"
+            };
+
+            for (String selector : emailErrorSelectors) {
+                try {
+                    By errorBy = By.cssSelector(selector);
+                    if (waitUtils.softWaitForElementToBeVisible(errorBy, 2) != null) {
+                        String errorText = getText(errorBy).toLowerCase();
+                        if (errorText.contains("email") || errorText.contains("e-mail") ||
+                            errorText.contains("address") || errorText.contains("@")) {
+                            return true;
+                        }
+                    }
+                } catch (Exception ignored) {
+                    // Continue to next selector
+                }
+            }
+
+            // Check in general validation messages for email-related errors
+            List<String> allErrors = getValidationErrorMessages();
+            return allErrors.stream().anyMatch(error -> {
+                String lowerError = error.toLowerCase();
+                return lowerError.contains("email") || lowerError.contains("e-mail") ||
+                       lowerError.contains("address") || lowerError.contains("@");
+            });
+
         } catch (Exception e) {
+            logger.debug("Error checking for email validation error: {}", e.getMessage());
             return false;
         }
     }

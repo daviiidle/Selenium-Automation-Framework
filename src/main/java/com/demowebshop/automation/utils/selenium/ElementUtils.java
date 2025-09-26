@@ -22,11 +22,102 @@ public class ElementUtils {
     }
 
     /**
-     * Enhanced click method with retry mechanism and JavaScript fallback
+     * Enhanced click method with stale element retry and JavaScript fallback
+     * @param by Locator to find the element
+     */
+    public void clickElement(By by) {
+        int maxRetries = 5;
+        for (int attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+                WebElement element = driver.findElement(by);
+                element.click();
+                logger.debug("Successfully clicked element using regular click");
+                return; // Success, exit the retry loop
+            } catch (StaleElementReferenceException e) {
+                logger.warn("Element is stale, re-finding and retrying ({}/{})", attempt, maxRetries);
+                // Wait a bit before retry to allow page to stabilize
+                try {
+                    Thread.sleep(500);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    throw new RuntimeException("Interrupted during stale element retry", ie);
+                }
+                if (attempt == maxRetries) {
+                    logger.error("Element remained stale after {} attempts", maxRetries);
+                    throw new RuntimeException("Element is stale and could not be clicked after multiple attempts", e);
+                }
+            } catch (ElementClickInterceptedException e) {
+                logger.warn("Regular click intercepted, trying JavaScript click (attempt {}/{})", attempt, maxRetries);
+                try {
+                    WebElement element = driver.findElement(by);
+                    clickElementWithJavaScript(element);
+                    return; // Success with JavaScript click
+                } catch (Exception jsException) {
+                    if (attempt == maxRetries) {
+                        throw new RuntimeException("Failed to click element with both regular and JavaScript methods", e);
+                    }
+                    logger.warn("JavaScript click also failed, retrying ({}/{})", attempt, maxRetries);
+                    try {
+                        Thread.sleep(500);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                    }
+                }
+            } catch (ElementNotInteractableException e) {
+                logger.warn("Element not interactable, trying JavaScript click (attempt {}/{})", attempt, maxRetries);
+                try {
+                    WebElement element = driver.findElement(by);
+                    clickElementWithJavaScript(element);
+                    return; // Success with JavaScript click
+                } catch (Exception jsException) {
+                    if (attempt == maxRetries) {
+                        throw new RuntimeException("Failed to click element with both regular and JavaScript methods", e);
+                    }
+                    logger.warn("JavaScript click also failed, retrying ({}/{})", attempt, maxRetries);
+                    try {
+                        Thread.sleep(500);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                    }
+                }
+            } catch (NoSuchElementException e) {
+                if (attempt == maxRetries) {
+                    logger.error("Element not found after {} attempts: {}", maxRetries, by);
+                    throw new RuntimeException("Element not found: " + by, e);
+                }
+                logger.warn("Element not found, retrying ({}/{}): {}", attempt, maxRetries, by);
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                }
+            } catch (Exception e) {
+                logger.warn("Regular click failed (attempt {}/{}), trying JavaScript click: {}", attempt, maxRetries, e.getMessage());
+                try {
+                    WebElement element = driver.findElement(by);
+                    clickElementWithJavaScript(element);
+                    return; // Success with JavaScript click
+                } catch (Exception jsException) {
+                    if (attempt == maxRetries) {
+                        throw new RuntimeException("Failed to click element with both regular and JavaScript methods after " + maxRetries + " attempts", e);
+                    }
+                    logger.warn("JavaScript click also failed, retrying ({}/{})", attempt, maxRetries);
+                    try {
+                        Thread.sleep(500);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Enhanced click method with retry mechanism and JavaScript fallback (for direct WebElement)
      * @param element Element to click
      */
     public void clickElement(WebElement element) {
-        int maxRetries = 3;
+        int maxRetries = 5;
         for (int attempt = 1; attempt <= maxRetries; attempt++) {
             try {
                 // Try regular click first
@@ -38,7 +129,7 @@ public class ElementUtils {
                     logger.error("Element remained stale after {} attempts", maxRetries);
                     throw new RuntimeException("Element is stale and could not be clicked after multiple attempts", e);
                 }
-                logger.warn("Element is stale, retrying ({}/{})", attempt, maxRetries);
+                logger.warn("Element is stale, cannot re-find without locator ({}/{})", attempt, maxRetries);
                 // Wait a bit before retry to allow page to stabilize
                 try {
                     Thread.sleep(500);
@@ -56,6 +147,27 @@ public class ElementUtils {
                         throw new RuntimeException("Failed to click element with both regular and JavaScript methods", e);
                     }
                     logger.warn("JavaScript click also failed, retrying ({}/{})", attempt, maxRetries);
+                    try {
+                        Thread.sleep(500);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                    }
+                }
+            } catch (ElementNotInteractableException e) {
+                logger.warn("Element not interactable, trying JavaScript click");
+                try {
+                    clickElementWithJavaScript(element);
+                    return; // Success with JavaScript click
+                } catch (Exception jsException) {
+                    if (attempt == maxRetries) {
+                        throw new RuntimeException("Failed to click element with both regular and JavaScript methods", e);
+                    }
+                    logger.warn("JavaScript click also failed, retrying ({}/{})", attempt, maxRetries);
+                    try {
+                        Thread.sleep(500);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                    }
                 }
             } catch (Exception e) {
                 logger.warn("Regular click failed (attempt {}/{}), trying JavaScript click: {}", attempt, maxRetries, e.getMessage());
@@ -67,6 +179,11 @@ public class ElementUtils {
                         throw new RuntimeException("Failed to click element with both regular and JavaScript methods after " + maxRetries + " attempts", e);
                     }
                     logger.warn("JavaScript click also failed, retrying ({}/{})", attempt, maxRetries);
+                    try {
+                        Thread.sleep(500);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                    }
                 }
             }
         }

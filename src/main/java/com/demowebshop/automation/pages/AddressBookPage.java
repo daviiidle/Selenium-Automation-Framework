@@ -55,22 +55,28 @@ public class AddressBookPage extends BasePage {
      */
     public boolean hasAddresses() {
         try {
-            // Try multiple selector patterns for address items
-            By addressSelector = By.cssSelector(".address-list .section, .customer-addresses .address-item, .address-info");
-            if (!findElements(addressSelector).isEmpty()) {
+            // Use the new waitForAddressElements method to safely find addresses
+            List<org.openqa.selenium.WebElement> addressElements = waitUtils.waitForAddressElements();
+            if (!addressElements.isEmpty()) {
                 return true;
             }
 
             // Check if there's a "no data" message instead
             By noDataSelector = By.cssSelector(".no-data, .no-addresses, .empty-list, .no-items");
-            if (isElementDisplayed(noDataSelector)) {
+            if (waitUtils.softWaitForElementToBeVisible(noDataSelector, 2) != null) {
                 return false; // No addresses message is displayed
             }
 
             // As final fallback, look for any container that might have addresses
-            By containerSelector = By.cssSelector(".address-list, .addresses, .customer-addresses");
-            return isElementDisplayed(containerSelector);
+            String[] containerSelectors = {".address-list", ".addresses", ".customer-addresses"};
+            for (String selector : containerSelectors) {
+                if (waitUtils.softWaitForElementToBeVisible(By.cssSelector(selector), 2) != null) {
+                    return true;
+                }
+            }
+            return false;
         } catch (Exception e) {
+            logger.debug("Error checking for addresses: {}", e.getMessage());
             return false;
         }
     }
@@ -81,10 +87,11 @@ public class AddressBookPage extends BasePage {
      */
     public int getAddressCount() {
         try {
-            // Try multiple selector patterns for address items
-            By addressSelector = By.cssSelector(".address-list .section, .customer-addresses .address-item, .address-info");
-            return findElements(addressSelector).size();
+            // Use the new waitForAddressElements method to safely count addresses
+            List<org.openqa.selenium.WebElement> addressElements = waitUtils.waitForAddressElements();
+            return addressElements.size();
         } catch (Exception e) {
+            logger.debug("Error getting address count: {}", e.getMessage());
             return 0;
         }
     }
@@ -226,12 +233,13 @@ public class AddressBookPage extends BasePage {
      */
     public List<String> getAddressList() {
         try {
-            // Try multiple selector patterns for address items
-            By addressSelector = By.cssSelector(".address-list .section, .customer-addresses .address-item, .address-info");
-            return findElements(addressSelector).stream()
+            // Use the new waitForAddressElements method to safely get addresses
+            List<org.openqa.selenium.WebElement> addressElements = waitUtils.waitForAddressElements();
+            return addressElements.stream()
                     .map(WebElement::getText)
                     .toList();
         } catch (Exception e) {
+            logger.debug("Error getting address list: {}", e.getMessage());
             return List.of();
         }
     }
@@ -242,14 +250,13 @@ public class AddressBookPage extends BasePage {
      */
     public String getFirstAddress() {
         try {
-            // Try multiple selector patterns for address items
-            By addressSelector = By.cssSelector(".address-list .section, .customer-addresses .address-item, .address-info");
-            List<WebElement> addresses = findElements(addressSelector);
-            if (!addresses.isEmpty()) {
-                return addresses.get(0).getText();
+            // Use the new waitForAddressElements method to safely get first address
+            List<org.openqa.selenium.WebElement> addressElements = waitUtils.waitForAddressElements();
+            if (!addressElements.isEmpty()) {
+                return addressElements.get(0).getText();
             }
         } catch (Exception e) {
-            logger.debug("Could not get first address");
+            logger.debug("Could not get first address: {}", e.getMessage());
         }
         return "";
     }

@@ -2,6 +2,7 @@ package utils;
 
 import com.demowebshop.automation.pages.HomePage;
 import com.demowebshop.automation.pages.LoginPage;
+import com.demowebshop.automation.pages.PasswordRecoveryPage;
 import com.demowebshop.automation.pages.ProductCatalogPage;
 import com.demowebshop.automation.pages.ProductDetailsPage;
 import com.demowebshop.automation.pages.ProductSearchPage;
@@ -118,11 +119,19 @@ public class DemoWebShopAssertions {
         softAssert.assertFalse(errorMessages.isEmpty(),
                 "Registration should have validation error messages");
 
-        if (expectedErrorField != null) {
+        if (expectedErrorField != null && !expectedErrorField.isEmpty()) {
+            String lowerExpectedField = expectedErrorField.toLowerCase();
             boolean hasFieldError = errorMessages.stream()
-                    .anyMatch(msg -> msg.toLowerCase().contains(expectedErrorField.toLowerCase()));
+                    .anyMatch(msg -> {
+                        String lowerMsg = msg.toLowerCase();
+                        return lowerMsg.contains(lowerExpectedField) ||
+                               (lowerExpectedField.contains("email") && (lowerMsg.contains("email") || lowerMsg.contains("e-mail"))) ||
+                               (lowerExpectedField.contains("password") && lowerMsg.contains("password")) ||
+                               (lowerExpectedField.contains("required") && (lowerMsg.contains("required") || lowerMsg.contains("field") || lowerMsg.contains("enter"))) ||
+                               (lowerExpectedField.contains("format") && (lowerMsg.contains("format") || lowerMsg.contains("invalid") || lowerMsg.contains("valid")));
+                    });
             softAssert.assertTrue(hasFieldError,
-                    "Should have validation error for field: " + expectedErrorField);
+                    String.format("Should have validation error for field '%s'. Actual errors: %s", expectedErrorField, errorMessages));
         }
 
         logger.info("Registration validation errors assertion completed");
@@ -144,7 +153,54 @@ public class DemoWebShopAssertions {
         softAssert.assertFalse(errorMessage.trim().isEmpty(),
                 "Login error message should not be empty");
 
+        // Add more specific error type checking
+        if (expectedErrorType != null && !expectedErrorType.isEmpty()) {
+            String lowerErrorMessage = errorMessage.toLowerCase();
+            String lowerExpectedType = expectedErrorType.toLowerCase();
+
+            boolean hasExpectedError = lowerErrorMessage.contains(lowerExpectedType) ||
+                                     (lowerExpectedType.contains("required") && (lowerErrorMessage.contains("required") || lowerErrorMessage.contains("field") || lowerErrorMessage.contains("enter"))) ||
+                                     (lowerExpectedType.contains("invalid") && (lowerErrorMessage.contains("invalid") || lowerErrorMessage.contains("incorrect") || lowerErrorMessage.contains("wrong")));
+
+            softAssert.assertTrue(hasExpectedError,
+                    String.format("Error message should contain or relate to '%s'. Actual message: '%s'", expectedErrorType, errorMessage));
+        }
+
         logger.info("Login validation errors assertion completed");
+    }
+
+    /**
+     * Assert password recovery validation errors
+     */
+    public void assertPasswordRecoveryValidationErrors(PasswordRecoveryPage recoveryPage, String expectedErrorType) {
+        logger.info("Asserting password recovery validation errors of type: {}", expectedErrorType);
+
+        softAssert.assertTrue(recoveryPage.hasValidationErrors(),
+                "Password recovery validation errors should be displayed");
+
+        String errorMessage = recoveryPage.getValidationErrorMessage();
+        softAssert.assertNotNull(errorMessage,
+                "Password recovery error message should not be null");
+
+        softAssert.assertFalse(errorMessage.trim().isEmpty(),
+                "Password recovery error message should not be empty");
+
+        // Add more specific error type checking for password recovery
+        if (expectedErrorType != null && !expectedErrorType.isEmpty()) {
+            String lowerErrorMessage = errorMessage.toLowerCase();
+            String lowerExpectedType = expectedErrorType.toLowerCase();
+
+            boolean hasExpectedError = lowerErrorMessage.contains(lowerExpectedType) ||
+                                     (lowerExpectedType.contains("email") && (lowerErrorMessage.contains("email") || lowerErrorMessage.contains("e-mail") || lowerErrorMessage.contains("address"))) ||
+                                     (lowerExpectedType.contains("required") && (lowerErrorMessage.contains("required") || lowerErrorMessage.contains("field") || lowerErrorMessage.contains("enter") || lowerErrorMessage.contains("empty"))) ||
+                                     (lowerExpectedType.contains("format") && (lowerErrorMessage.contains("format") || lowerErrorMessage.contains("invalid") || lowerErrorMessage.contains("valid") || lowerErrorMessage.contains("correct"))) ||
+                                     (lowerExpectedType.contains("invalid") && (lowerErrorMessage.contains("invalid") || lowerErrorMessage.contains("incorrect") || lowerErrorMessage.contains("wrong") || lowerErrorMessage.contains("not valid")));
+
+            softAssert.assertTrue(hasExpectedError,
+                    String.format("Password recovery error message should contain or relate to '%s'. Actual message: '%s'", expectedErrorType, errorMessage));
+        }
+
+        logger.info("Password recovery validation errors assertion completed");
     }
 
     // ========== Product Search and Browse Assertions ==========

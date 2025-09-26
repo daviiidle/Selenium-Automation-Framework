@@ -384,30 +384,53 @@ public class ProductCatalogPage extends BasePage {
      * @return true if products are available
      */
     public boolean hasProducts() {
-        // Check for actual product links on DemoWebShop
+        // Check for actual product items on the page, not navigation
         try {
-            // Check for main navigation categories using correct DemoWebShop selectors
-            By navigationSelector = By.cssSelector(".top-menu a, .header-links a");
-            // Use soft wait to avoid timeout exceptions and check if elements exist first
-            List<WebElement> navLinks = findElements(navigationSelector);
+            // Try multiple selectors for product items
+            String[] productSelectors = {
+                ".product-item",
+                ".item-box",
+                ".product-grid .item",
+                ".product-list .item",
+                ".products .product",
+                ".item-container"
+            };
 
-            // Only wait for visibility if elements exist
-            if (!navLinks.isEmpty()) {
+            for (String selector : productSelectors) {
                 try {
-                    waitUtils.waitForElementToBeVisible(navigationSelector, 3);
-                } catch (Exception e) {
-                    logger.debug("Navigation elements found but not visible yet: {}", e.getMessage());
+                    By productBy = By.cssSelector(selector);
+                    List<WebElement> productItems = findElements(productBy);
+                    if (!productItems.isEmpty()) {
+                        // Found products with this selector
+                        logger.debug("Found {} products with selector: {}", productItems.size(), selector);
+                        return true;
+                    }
+                } catch (Exception ignored) {
+                    // Continue to next selector
                 }
             }
 
-            // If navigation check fails, try product-specific elements
-            if (navLinks.isEmpty()) {
-                By productItemsSelector = By.cssSelector(".product-item, .item-box, .product-grid .item");
-                List<WebElement> productItems = waitUtils.softWaitForElementToBeVisible(productItemsSelector, 2) != null ?
-                    findElements(productItemsSelector) : List.of();
-                return !productItems.isEmpty();
+            // If no products found with standard selectors, check for "no products" message
+            String[] noProductsSelectors = {
+                ".no-result",
+                ".no-products",
+                ".empty-result",
+                ".no-data"
+            };
+
+            for (String selector : noProductsSelectors) {
+                try {
+                    if (waitUtils.softWaitForElementToBeVisible(By.cssSelector(selector), 2) != null) {
+                        logger.debug("Found no-products message with selector: {}", selector);
+                        return false;
+                    }
+                } catch (Exception ignored) {
+                    // Continue to next selector
+                }
             }
-            return !navLinks.isEmpty();
+
+            // Default to false if no products or no-products messages found
+            return false;
         } catch (Exception e) {
             logger.debug("Error checking for products: {}", e.getMessage());
             return false;
@@ -783,12 +806,45 @@ public class ProductCatalogPage extends BasePage {
      * @return true if sorting dropdown is visible
      */
     public boolean isSortingDropdownDisplayed() {
-        // DemoWebShop doesn't have sorting dropdowns on most category pages
-        // Return false for compatibility with tests that expect this functionality
         try {
-            By sortDropdownSelector = By.cssSelector("select[name*='sort'], select[name*='orderby'], .sort-dropdown");
-            return isElementDisplayed(sortDropdownSelector);
+            // Try multiple selectors for sorting dropdown with shorter timeout
+            String[] sortSelectors = {
+                "select[name='orderby']",
+                "select[name*='sort']",
+                ".sort-dropdown",
+                ".sorting-dropdown",
+                "#products-orderby",
+                "select[id*='sort']",
+                "select[id*='orderby']"
+            };
+
+            for (String selector : sortSelectors) {
+                try {
+                    By sortBy = By.cssSelector(selector);
+                    if (waitUtils.softWaitForElementToBeVisible(sortBy, 3) != null) {
+                        logger.debug("Found sorting dropdown with selector: {}", selector);
+                        return true;
+                    }
+                } catch (Exception ignored) {
+                    // Continue to next selector
+                }
+            }
+
+            // Fallback to original SelectorUtils method
+            try {
+                By sortDropdownSelector = SelectorUtils.getProductSelector("product_pages.category_listing.layout_controls.sort_dropdown");
+                if (waitUtils.softWaitForElementToBeVisible(sortDropdownSelector, 3) != null) {
+                    return true;
+                }
+            } catch (Exception ignored) {
+                // Fallback failed
+            }
+
+            // DemoWebShop might not have sorting dropdowns on all category pages
+            logger.debug("Sorting dropdown not found - might not be available on this category page");
+            return false;
         } catch (Exception e) {
+            logger.debug("Error checking for sorting dropdown: {}", e.getMessage());
             return false;
         }
     }
