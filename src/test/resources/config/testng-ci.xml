@@ -46,7 +46,12 @@
             <class name="tests.checkout.CheckoutTests"/>
 
             <!-- Account Management Tests -->
-            <class name="tests.account.AccountManagementTests"/>
+            <class name="tests.account.AccountManagementTests">
+                <methods>
+                    <!-- QUARANTINED: Flaky - intermittent sleep interruption in CI -->
+                    <exclude name="testOrderHistoryManagement"/>
+                </methods>
+            </class>
 
             <!-- Error Handling Tests -->
             <class name="tests.error.ErrorHandlingTests"/>

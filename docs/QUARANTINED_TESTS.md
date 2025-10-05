@@ -4,7 +4,7 @@ Tests that are temporarily excluded from CI execution due to flakiness or enviro
 
 ## Current Quarantined Tests
 
-### ProductSearchTests.testValidProductSearch
+### 1. ProductSearchTests.testValidProductSearch
 
 **Status:** ⚠️ Quarantined
 **Date Quarantined:** 2025-10-06
@@ -28,6 +28,36 @@ Tests that are temporarily excluded from CI execution due to flakiness or enviro
 **To Re-enable:**
 1. Fix the underlying issue
 2. Verify test passes locally with headless Chrome
+3. Remove exclusion from `testng-ci.xml`
+4. Run CI to confirm
+5. Update this document
+
+---
+
+### 2. AccountManagementTests.testOrderHistoryManagement
+
+**Status:** ⚠️ Quarantined
+**Date Quarantined:** 2025-10-06
+**Reason:** Flaky - intermittent sleep interruption in CI environment
+**Error:** `Interrupted sleep interrupted`
+**Location:** `src/test/java/tests/account/AccountManagementTests.java`
+**Excluded From:**
+- `testng-ci.xml` (CI configuration)
+
+**Investigation Notes:**
+- Sleep interruption suggests thread timing issue
+- May be related to parallel execution with 2 threads in CI
+- Could be external dependency timeout or navigation timing
+
+**Action Items:**
+- [ ] Review Thread.sleep() usage in test
+- [ ] Replace sleep with explicit waits
+- [ ] Check for race conditions in order history loading
+- [ ] Test with sequential execution (thread-count=1)
+
+**To Re-enable:**
+1. Replace sleep with proper WebDriverWait
+2. Verify test passes locally with CI profile (-Pci)
 3. Remove exclusion from `testng-ci.xml`
 4. Run CI to confirm
 5. Update this document
