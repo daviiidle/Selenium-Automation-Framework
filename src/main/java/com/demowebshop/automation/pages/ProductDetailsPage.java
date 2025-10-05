@@ -24,6 +24,14 @@ public class ProductDetailsPage extends BasePage {
 
     public ProductDetailsPage(WebDriver driver) {
         super(driver);
+        // Wait for product page to be fully loaded by ensuring add-to-cart button is present
+        try {
+            By addToCartSelector = SelectorUtils.getSecondarySelector("product", "product_pages.product_detail.purchase_options.add_to_cart_button");
+            $(addToCartSelector).shouldBe(com.codeborne.selenide.Condition.visible, java.time.Duration.ofSeconds(10));
+            logger.debug("Product details page loaded successfully");
+        } catch (Exception e) {
+            logger.warn("Product details page may not have add-to-cart button: {}", e.getMessage());
+        }
     }
 
     public ProductDetailsPage() {
@@ -85,8 +93,48 @@ public class ProductDetailsPage extends BasePage {
      * @return Product price text
      */
     public String getProductPrice() {
-        By priceSelector = SelectorUtils.getProductSelector("product_pages.product_detail.product_info.price");
-        return getText(priceSelector);
+        try {
+            // Try multiple selectors for product price
+            String[] priceSelectors = {
+                ".product-price span",
+                "[class*='price-value']",
+                ".price-value-1",
+                ".product-price",
+                ".price",
+                "[class*='price']"
+            };
+
+            for (String selector : priceSelectors) {
+                try {
+                    By priceBy = By.cssSelector(selector);
+                    if (waitUtils.softWaitForElementToBeVisible(priceBy, 3) != null) {
+                        String priceText = getText(priceBy);
+                        if (!priceText.trim().isEmpty()) {
+                            logger.debug("Found product price with selector '{}': {}", selector, priceText);
+                            return priceText;
+                        }
+                    }
+                } catch (Exception ignored) {
+                    // Continue to next selector
+                }
+            }
+
+            // Fallback to original method
+            try {
+                By priceSelector = SelectorUtils.getProductSelector("product_pages.product_detail.product_info.price");
+                if (waitUtils.softWaitForElementToBeVisible(priceSelector, 3) != null) {
+                    return getText(priceSelector);
+                }
+            } catch (Exception ignored) {
+                // Final fallback failed
+            }
+
+            logger.warn("Product price not found with any selector");
+            return "";
+        } catch (Exception e) {
+            logger.debug("Error getting product price: {}", e.getMessage());
+            return "";
+        }
     }
 
     /**
@@ -164,7 +212,8 @@ public class ProductDetailsPage extends BasePage {
      */
     public void selectQuantity(int quantity) {
         try {
-            By quantitySelector = SelectorUtils.getProductSelector("product_pages.product_detail.add_to_cart.quantity");
+            // Use secondary selector which doesn't require product ID placeholder
+            By quantitySelector = SelectorUtils.getSecondarySelector("product", "product_pages.product_detail.purchase_options.quantity_input");
             SelenideElement quantityField = $(quantitySelector);
             clear(quantityField);
             type(quantityField, String.valueOf(quantity));
@@ -178,12 +227,47 @@ public class ProductDetailsPage extends BasePage {
      * Click add to cart button
      */
     public void clickAddToCart() {
+        System.out.println(">>>>>>>>>> CLICK ADD TO CART CALLED <<<<<<<<<<");
+        logger.info("=== START clickAddToCart() ===");
         try {
-            By addToCartSelector = SelectorUtils.getProductSelector("product_pages.product_detail.add_to_cart.button");
+            // Use secondary selector which doesn't require product ID placeholder
+            logger.info("Getting add-to-cart selector...");
+            By addToCartSelector = SelectorUtils.getSecondarySelector("product", "product_pages.product_detail.purchase_options.add_to_cart_button");
+            logger.info("Selector obtained: {}", addToCartSelector);
+
+            // Click add to cart button
+            logger.info("Clicking add-to-cart button");
             click(addToCartSelector);
-            logger.info("Clicked add to cart button");
+            logger.info("Add-to-cart button clicked");
+
+            // Wait for the notification bar to appear (this appears immediately after successful add-to-cart)
+            try {
+                logger.info("Waiting for notification bar...");
+                By notificationSelector = By.cssSelector("#bar-notification, .bar-notification");
+                $(notificationSelector).shouldBe(com.codeborne.selenide.Condition.visible, java.time.Duration.ofSeconds(10));
+                logger.info("Add-to-cart notification appeared - product successfully added");
+
+                // Wait a bit more for cart count to update in the header
+                Thread.sleep(1000);
+            } catch (Exception e) {
+                logger.warn("Notification bar did not appear - add-to-cart may have failed: {}", e.getMessage());
+            }
+
+            // Verify cart was updated by checking the cart count
+            try {
+                By cartQtySelector = By.cssSelector(".cart-qty, .header-links .cart-qty");
+                String qtyText = $(cartQtySelector).getText();
+                String numberOnly = qtyText.replaceAll("[^0-9]", "");
+                int currentCount = numberOnly.isEmpty() ? 0 : Integer.parseInt(numberOnly);
+                logger.info("Current cart count after add-to-cart: {}", currentCount);
+            } catch (Exception e) {
+                logger.debug("Could not verify cart count: {}", e.getMessage());
+            }
+
+            logger.info("=== END clickAddToCart() SUCCESS ===");
         } catch (Exception e) {
-            logger.warn("Could not click add to cart: {}", e.getMessage());
+            logger.error("=== FATAL ERROR in clickAddToCart() ===", e);
+            throw new RuntimeException("Failed to click add-to-cart button", e);
         }
     }
 
@@ -266,7 +350,7 @@ public class ProductDetailsPage extends BasePage {
 
         // Wait for any AJAX cart updates
         try {
-            Thread.sleep(2000);
+            Thread.sleep(4000);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }

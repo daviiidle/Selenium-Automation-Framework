@@ -31,6 +31,12 @@
         "xpath": "//a[@href='/login']",
         "stability": "High"
       },
+      "logout_link": {
+        "primary": "a[href='/logout']",
+        "secondary": ".header-links a:contains('Log out')",
+        "xpath": "//a[@href='/logout' or contains(text(), 'Log out')]",
+        "stability": "High"
+      },
       "cart_link": {
         "primary": "a[href='/cart']",
         "secondary": ".header-links .cart-label",

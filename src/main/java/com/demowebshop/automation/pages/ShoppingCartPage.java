@@ -52,6 +52,15 @@ public class ShoppingCartPage extends BasePage {
      */
     public boolean isCartEmpty() {
         try {
+            // Wait a moment for cart to load
+            waitForPageToLoad();
+
+            // First check if there are cart items visible
+            if (!getCartItems().isEmpty()) {
+                return false;
+            }
+
+            // If no items, check for empty message
             By emptyMessageSelector = SelectorUtils.getCartSelector("cart_and_checkout.shopping_cart.empty_cart.message");
             return isElementDisplayed(emptyMessageSelector);
         } catch (Exception e) {
@@ -199,10 +208,30 @@ public class ShoppingCartPage extends BasePage {
      */
     public int getItemQuantity(String productName) {
         try {
-            By quantitySelector = By.cssSelector("input[name*='quantity']");
-            SelenideElement quantityField = $(quantitySelector);
-            String value = getAttribute(quantityField, "value");
-            return Integer.parseInt(value);
+            // Try multiple quantity selectors based on cart-checkout-selectors.json
+            String[] quantitySelectors = {
+                ".qty-input",
+                "input[name*='itemquantity']",
+                "input[name*='quantity']",
+                ".quantity input"
+            };
+
+            for (String selector : quantitySelectors) {
+                try {
+                    SelenideElement quantityField = $(By.cssSelector(selector));
+                    if (quantityField.exists()) {
+                        String value = quantityField.getValue();
+                        if (value != null && !value.isEmpty()) {
+                            return Integer.parseInt(value);
+                        }
+                    }
+                } catch (Exception ignored) {
+                    // Continue to next selector
+                }
+            }
+
+            logger.warn("Could not find quantity field for {}", productName);
+            return 0;
         } catch (Exception e) {
             logger.warn("Could not get quantity for {}: {}", productName, e.getMessage());
             return 0;
@@ -215,9 +244,26 @@ public class ShoppingCartPage extends BasePage {
      */
     public HomePage clickContinueShopping() {
         try {
-            By continueSelector = By.linkText("Continue shopping");
-            click(continueSelector);
-            logger.info("Clicked continue shopping");
+            // Check if cart is empty first
+            if (isCartEmpty()) {
+                logger.warn("Cart is empty, navigating to home page directly");
+                driver.get(driver.getCurrentUrl().replaceAll("/cart.*", "/"));
+                return new HomePage(driver);
+            }
+
+            // Try multiple selectors for "Continue shopping" button
+            By continueSelector = By.cssSelector("input[value='Continue shopping']");
+            if (!$(continueSelector).exists()) {
+                continueSelector = By.linkText("Continue shopping");
+            }
+
+            if ($(continueSelector).exists()) {
+                click(continueSelector);
+                logger.info("Clicked continue shopping");
+            } else {
+                logger.warn("Continue shopping button not found, navigating to home directly");
+                driver.get(driver.getCurrentUrl().replaceAll("/cart.*", "/"));
+            }
             return new HomePage(driver);
         } catch (Exception e) {
             logger.warn("Could not click continue shopping: {}", e.getMessage());
@@ -231,13 +277,34 @@ public class ShoppingCartPage extends BasePage {
      */
     public int getTotalItemCount() {
         try {
-            ElementsCollection quantityFields = $$(By.cssSelector("input[name*='quantity']"));
-            int total = 0;
-            for (SelenideElement field : quantityFields) {
-                String value = getAttribute(field, "value");
-                total += Integer.parseInt(value);
+            // Try multiple quantity selectors
+            String[] quantitySelectors = {
+                ".qty-input",
+                "input[name*='itemquantity']",
+                "input[name*='quantity']"
+            };
+
+            for (String selector : quantitySelectors) {
+                try {
+                    ElementsCollection quantityFields = $$(By.cssSelector(selector));
+                    if (quantityFields.size() > 0) {
+                        int total = 0;
+                        for (SelenideElement field : quantityFields) {
+                            String value = field.getValue();
+                            if (value != null && !value.isEmpty()) {
+                                total += Integer.parseInt(value);
+                            }
+                        }
+                        if (total > 0) {
+                            return total;
+                        }
+                    }
+                } catch (Exception ignored) {
+                    // Continue to next selector
+                }
             }
-            return total;
+
+            return getCartItemCount();
         } catch (Exception e) {
             return getCartItemCount();
         }
@@ -249,10 +316,20 @@ public class ShoppingCartPage extends BasePage {
      */
     public double getCartTotal() {
         try {
-            By totalSelector = By.cssSelector(".cart-total, .order-total");
+            // Wait for cart to update
+            waitForPageToLoad();
+
+            // Try the correct selector from cart-checkout-selectors.json
+            By totalSelector = By.cssSelector(".order-total .cart-total-right");
+            if (!isElementDisplayed(totalSelector)) {
+                totalSelector = By.cssSelector(".cart-total-right");
+            }
+
             String totalText = getText(totalSelector);
             String numericTotal = totalText.replaceAll("[^0-9.]", "");
-            return Double.parseDouble(numericTotal);
+            double total = Double.parseDouble(numericTotal);
+            logger.debug("Cart total: {}", total);
+            return total;
         } catch (Exception e) {
             logger.warn("Could not get cart total: {}", e.getMessage());
             return 0.0;
@@ -313,6 +390,14 @@ public class ShoppingCartPage extends BasePage {
         try {
             By updateSelector = By.cssSelector("input[name='updatecart'], button[name='updatecart']");
             click(updateSelector);
+
+            // Simple wait for AJAX to complete
+            try {
+                Thread.sleep(3000);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+
             logger.info("Clicked update cart");
         } catch (Exception e) {
             logger.warn("Could not click update cart: {}", e.getMessage());
@@ -377,10 +462,32 @@ public class ShoppingCartPage extends BasePage {
      */
     public double getItemUnitPrice(String productName) {
         try {
-            By priceSelector = By.cssSelector(".unit-price");
-            String priceText = getText(priceSelector);
-            String numericPrice = priceText.replaceAll("[^0-9.]", "");
-            return Double.parseDouble(numericPrice);
+            // Try multiple price selectors based on cart-checkout-selectors.json
+            String[] priceSelectors = {
+                ".unit-price",
+                "[class*='unit-price']",
+                ".product-unit-price"
+            };
+
+            for (String selector : priceSelectors) {
+                try {
+                    SelenideElement priceElement = $(By.cssSelector(selector));
+                    if (priceElement.exists() && priceElement.isDisplayed()) {
+                        String priceText = priceElement.getText();
+                        if (priceText != null && !priceText.isEmpty()) {
+                            String numericPrice = priceText.replaceAll("[^0-9.]", "");
+                            if (!numericPrice.isEmpty()) {
+                                return Double.parseDouble(numericPrice);
+                            }
+                        }
+                    }
+                } catch (Exception ignored) {
+                    // Continue to next selector
+                }
+            }
+
+            logger.warn("Could not find unit price for {}", productName);
+            return 0.0;
         } catch (Exception e) {
             logger.warn("Could not get unit price for {}: {}", productName, e.getMessage());
             return 0.0;
@@ -394,10 +501,37 @@ public class ShoppingCartPage extends BasePage {
      */
     public double getItemLineTotal(String productName) {
         try {
-            By totalSelector = By.cssSelector(".subtotal");
-            String totalText = getText(totalSelector);
-            String numericTotal = totalText.replaceAll("[^0-9.]", "");
-            return Double.parseDouble(numericTotal);
+            // Try to find the specific product row and get its subtotal
+            // First try using XPath to find the row containing the product name
+            ElementsCollection cartRows = $$(".cart tbody tr");
+            for (SelenideElement row : cartRows) {
+                try {
+                    if (row.exists()) {
+                        String rowText = row.getText();
+                        if (rowText.contains(productName)) {
+                            SelenideElement subtotalCell = row.$(".subtotal");
+                            if (subtotalCell.exists()) {
+                                String totalText = subtotalCell.getText();
+                                String numericTotal = totalText.replaceAll("[^0-9.]", "");
+                                return Double.parseDouble(numericTotal);
+                            }
+                        }
+                    }
+                } catch (Exception ignored) {
+                    // Continue to next row
+                }
+            }
+
+            // Fallback: try to get any subtotal (for single item carts)
+            By totalSelector = By.cssSelector(".cart tbody tr .subtotal");
+            if ($(totalSelector).exists()) {
+                String totalText = getText(totalSelector);
+                String numericTotal = totalText.replaceAll("[^0-9.]", "");
+                return Double.parseDouble(numericTotal);
+            }
+
+            logger.warn("Could not find subtotal for product: {}", productName);
+            return 0.0;
         } catch (Exception e) {
             logger.warn("Could not get line total for {}: {}", productName, e.getMessage());
             return 0.0;
@@ -410,11 +544,24 @@ public class ShoppingCartPage extends BasePage {
      */
     public double getCartSubtotal() {
         try {
+            // Try multiple possible selectors for subtotal
             By subtotalSelector = By.cssSelector(".cart-subtotal");
-            String subtotalText = getText(subtotalSelector);
-            String numericSubtotal = subtotalText.replaceAll("[^0-9.]", "");
-            return Double.parseDouble(numericSubtotal);
+            if (!$(subtotalSelector).exists()) {
+                subtotalSelector = By.cssSelector(".order-subtotal .cart-total-right");
+            }
+            if (!$(subtotalSelector).exists()) {
+                subtotalSelector = By.cssSelector(".subtotal .cart-total-right");
+            }
+
+            if ($(subtotalSelector).exists()) {
+                String subtotalText = getText(subtotalSelector);
+                String numericSubtotal = subtotalText.replaceAll("[^0-9.]", "");
+                return Double.parseDouble(numericSubtotal);
+            }
+
+            return getCartTotal(); // Fallback to total
         } catch (Exception e) {
+            logger.debug("Could not get cart subtotal, using total instead: {}", e.getMessage());
             return getCartTotal(); // Fallback to total
         }
     }
@@ -638,8 +785,26 @@ public class ShoppingCartPage extends BasePage {
         By checkoutButtonSelector = SelectorUtils.getCartSelector("cart_and_checkout.shopping_cart.cart_actions.checkout_button");
 
         if (!isCartEmpty()) {
+            // Check for terms of service checkbox
+            try {
+                SelenideElement termsCheckbox = $(By.id("termsofservice"));
+                if (termsCheckbox.exists() && !termsCheckbox.isSelected()) {
+                    termsCheckbox.click();
+                    logger.info("Accepted terms of service");
+                }
+            } catch (Exception e) {
+                logger.debug("No terms of service checkbox found or already checked");
+            }
+
             click(checkoutButtonSelector);
             waitForPageToLoad();
+
+            // Wait for checkout page to load
+            String currentUrl = getCurrentUrl();
+            if (!currentUrl.contains("/checkout")) {
+                logger.warn("Checkout page may not have loaded. Current URL: {}", currentUrl);
+            }
+
             logger.info("Proceeded to checkout");
             return new CheckoutPage(driver);
         } else {

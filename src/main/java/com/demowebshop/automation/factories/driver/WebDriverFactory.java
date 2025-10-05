@@ -132,28 +132,34 @@ public class WebDriverFactory {
     }
 
     /**
-     * Gets Chrome options based on configuration
+     * Gets Chrome options based on configuration - SIMPLIFIED for reliability
      * @return ChromeOptions
      */
     private static ChromeOptions getChromeOptions() {
         ChromeOptions options = new ChromeOptions();
 
-        // Force headless mode for stability in parallel execution
+        // Basic headless configuration that works (matches successful simple test)
         options.addArguments("--headless=new");
-        options.addArguments("--window-size=1920,1080");
-
-        // Essential Chrome arguments for headless stability
         options.addArguments("--no-sandbox");
         options.addArguments("--disable-dev-shm-usage");
         options.addArguments("--disable-gpu");
+
+        // Minimal additional arguments for stability
+        options.addArguments("--window-size=1920,1080");
         options.addArguments("--disable-extensions");
-        options.addArguments("--disable-infobars");
-        options.addArguments("--remote-debugging-port=0");
-        options.addArguments("--disable-web-security");
-        options.addArguments("--disable-features=VizDisplayCompositor");
+
+        // Stability improvements for parallel execution
+        options.addArguments("--disable-background-networking");
+        options.addArguments("--disable-default-apps");
+        options.addArguments("--disable-sync");
+        options.addArguments("--metrics-recording-only");
+        options.addArguments("--no-first-run");
+
+        // Anti-automation detection (minimal)
         options.setExperimentalOption("useAutomationExtension", false);
         options.setExperimentalOption("excludeSwitches", new String[]{"enable-automation"});
 
+        logger.debug("Created simplified Chrome options for maximum compatibility");
         return options;
     }
 
@@ -249,24 +255,43 @@ public class WebDriverFactory {
 
     /**
      * Quits the current thread's WebDriver instance and removes it from ThreadLocal
-     * Selenide-aware cleanup to prevent double cleanup issues
+     * Selenide-aware cleanup to prevent double cleanup issues with timeout handling
      */
     public static void quitDriver() {
         WebDriver driver = driverThreadLocal.get();
         if (driver != null) {
             try {
-                // Skip window operations that may fail in headless/crashed browsers
-                driver.quit();
+                // Use a timeout for quit operation to prevent hanging
+                java.util.concurrent.CompletableFuture.runAsync(() -> {
+                    try {
+                        driver.quit();
+                    } catch (Exception e) {
+                        logger.debug("WebDriver quit threw exception: {}", e.getMessage());
+                    }
+                }).get(10, java.util.concurrent.TimeUnit.SECONDS);
+
                 logger.info("WebDriver quit successfully");
+            } catch (java.util.concurrent.TimeoutException e) {
+                logger.warn("WebDriver quit timed out after 10 seconds - forcing cleanup");
+                // Force cleanup if quit hangs
+                try {
+                    if (driver instanceof ChromeDriver) {
+                        // For Chrome, try to forcefully close browser processes
+                        Runtime.getRuntime().exec("taskkill /f /im chrome.exe /t");
+                        Runtime.getRuntime().exec("taskkill /f /im chromedriver.exe /t");
+                    }
+                } catch (Exception ignored) {
+                    // Best effort process cleanup
+                }
             } catch (Exception e) {
                 logger.warn("WebDriver quit with error (normal for crashed sessions): {}", e.getMessage());
             } finally {
+                // Always clean up ThreadLocal and Selenide references
                 driverThreadLocal.remove();
-                // Clear Selenide's WebDriver reference safely
                 try {
                     WebDriverRunner.closeWebDriver();
                 } catch (Exception e) {
-                    logger.debug("Selenide WebDriver already cleaned up: {}", e.getMessage());
+                    logger.debug("Selenide WebDriver cleanup: {}", e.getMessage());
                 }
             }
         }

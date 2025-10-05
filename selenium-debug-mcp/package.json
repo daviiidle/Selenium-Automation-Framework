@@ -1,0 +1,39 @@
+{
+  "name": "selenium-debug-mcp",
+  "version": "1.0.0",
+  "description": "MCP server for debugging Java Selenium framework with live test execution and intelligent error analysis",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch",
+    "start": "node dist/index.js",
+    "dev": "tsc && node dist/index.js",
+    "clean": "rm -rf dist"
+  },
+  "keywords": [
+    "mcp",
+    "selenium",
+    "testing",
+    "debugging",
+    "automation"
+  ],
+  "author": "David",
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "selenium-webdriver": "^4.27.0",
+    "fast-xml-parser": "^4.5.0",
+    "dotenv": "^16.4.5",
+    "zod": "^3.23.8",
+    "winston": "^3.17.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "@types/selenium-webdriver": "^4.1.27",
+    "typescript": "^5.7.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

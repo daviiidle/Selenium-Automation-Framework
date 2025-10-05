@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
+<suite name="DemoWebShop CI Test Suite"
+       parallel="methods"
+       thread-count="2"
+       verbose="2"
+       data-provider-thread-count="2"
+       time-out="300000"
+       preserve-order="false"
+       allow-return-values="true">
+
+    <parameter name="browser" value="chrome"/>
+    <parameter name="headless" value="true"/>
+
+    <!-- CI-optimized configuration: 2 threads for GitHub Actions runners -->
+
+    <test name="CI Test Suite - All Tests"
+          preserve-order="false"
+          parallel="methods"
+          thread-count="2">
+
+        <classes>
+            <!-- Authentication Tests -->
+            <class name="tests.authentication.ComprehensiveLoginTests"/>
+            <class name="tests.authentication.LoginTests"/>
+            <class name="tests.authentication.RegistrationTests"/>
+            <class name="tests.authentication.PasswordRecoveryTests"/>
+
+            <!-- Navigation Tests -->
+            <class name="tests.navigation.HomePageTests"/>
+            <class name="tests.navigation.ComprehensiveHomePageTests"/>
+
+            <!-- Product Tests -->
+            <class name="tests.products.ProductSearchTests"/>
+            <class name="tests.products.ProductCatalogTests"/>
+
+            <!-- Shopping Cart Tests -->
+            <class name="tests.cart.ShoppingCartTests"/>
+
+            <!-- Checkout Tests -->
+            <class name="tests.checkout.CheckoutTests"/>
+
+            <!-- Account Management Tests -->
+            <class name="tests.account.AccountManagementTests"/>
+
+            <!-- Error Handling Tests -->
+            <class name="tests.error.ErrorHandlingTests"/>
+        </classes>
+    </test>
+
+</suite>

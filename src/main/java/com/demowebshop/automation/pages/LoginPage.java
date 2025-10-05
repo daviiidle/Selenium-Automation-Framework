@@ -93,9 +93,9 @@ public class LoginPage extends BasePage {
         $("input[type='submit'][value='Log in']").click();
         logger.info("Clicked login button");
 
-        // Wait briefly for potential redirect or error messages
+        // Wait for page to process login
         try {
-            Thread.sleep(2000);
+            Thread.sleep(4000);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
@@ -106,7 +106,14 @@ public class LoginPage extends BasePage {
             return this;
         } else {
             logger.info("Login appears successful - redirecting to homepage");
-            return new HomePage();
+            // Wait for page state to fully update after successful login
+            try {
+                Thread.sleep(2000);
+                return new HomePage(driver);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return new HomePage(driver);
+            }
         }
     }
 
@@ -177,7 +184,7 @@ public class LoginPage extends BasePage {
             try {
                 By errorSelector = SelectorUtils.getAuthSelector("authentication.login_page.validation.error_messages");
                 SelenideElement errorElement = $(errorSelector);
-                if (errorElement != null) {
+                if (errorElement.exists()) {
                     String errorText = errorElement.getText();
                     if (errorText != null && !errorText.trim().isEmpty()) {
                         logger.debug("Found validation error with primary selector: {}", errorText);
@@ -210,7 +217,7 @@ public class LoginPage extends BasePage {
                 try {
                     By fallbackBy = By.cssSelector(selector);
                     SelenideElement errorElement = $(fallbackBy);
-                    if (errorElement != null) {
+                    if (errorElement.exists()) {
                         String errorText = errorElement.getText();
                         if (errorText != null && !errorText.trim().isEmpty()) {
                             logger.debug("Found validation error with fallback selector '{}': {}", selector, errorText);

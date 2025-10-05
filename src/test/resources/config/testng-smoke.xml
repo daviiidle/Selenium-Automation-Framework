@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
+<suite name="DemoWebShop Smoke Test Suite"
+       parallel="methods"
+       thread-count="2"
+       verbose="2"
+       data-provider-thread-count="2"
+       time-out="300000"
+       preserve-order="false"
+       allow-return-values="true">
+
+    <parameter name="browser" value="chrome"/>
+    <parameter name="headless" value="true"/>
+
+    <!-- Smoke tests only - fast critical path validation -->
+
+    <test name="Smoke Tests">
+        <groups>
+            <run>
+                <include name="smoke"/>
+            </run>
+        </groups>
+
+        <classes>
+            <!-- Authentication Tests -->
+            <class name="tests.authentication.ComprehensiveLoginTests"/>
+            <class name="tests.authentication.LoginTests"/>
+            <class name="tests.authentication.RegistrationTests"/>
+
+            <!-- Navigation Tests -->
+            <class name="tests.navigation.HomePageTests"/>
+            <class name="tests.navigation.ComprehensiveHomePageTests"/>
+
+            <!-- Product Tests -->
+            <class name="tests.products.ProductSearchTests"/>
+            <class name="tests.products.ProductCatalogTests"/>
+
+            <!-- Shopping Cart Tests -->
+            <class name="tests.cart.ShoppingCartTests"/>
+
+            <!-- Checkout Tests -->
+            <class name="tests.checkout.CheckoutTests"/>
+
+            <!-- Account Management Tests -->
+            <class name="tests.account.AccountManagementTests"/>
+        </classes>
+    </test>
+
+</suite>

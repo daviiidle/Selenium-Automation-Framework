@@ -1,0 +1,222 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
+<suite name="DemoWebShop Complete Test Suite"
+       parallel="methods"
+       thread-count="6"
+       verbose="3"
+       data-provider-thread-count="4"
+       time-out="300000"
+       preserve-order="false"
+       allow-return-values="true">
+
+    <parameter name="browser" value="chrome"/>
+    <parameter name="headless" value="true"/>
+
+    <!-- Listeners for reporting (can be enabled after fixing core issues) -->
+    <!--
+    <listeners>
+        <listener class-name="listeners.ExtentReportListener"/>
+        <listener class-name="listeners.ScreenshotListener"/>
+        <listener class-name="io.qameta.allure.testng.AllureTestNg"/>
+    </listeners>
+    -->
+
+    <!-- ========================================
+         COMPREHENSIVE TEST EXECUTION PLAN
+         Explicitly lists ALL 12 test classes
+         Expected: 82 test methods
+         With data providers: ~150+ test executions
+         ======================================== -->
+
+    <test name="Complete Test Suite - All Tests"
+          preserve-order="false"
+          parallel="methods"
+          thread-count="6">
+
+        <classes>
+            <!-- ========================================
+                 AUTHENTICATION TESTS (35 test methods)
+                 ======================================== -->
+
+            <!-- ComprehensiveLoginTests: 10 test methods -->
+            <class name="tests.authentication.ComprehensiveLoginTests">
+                <methods>
+                    <include name="testValidLogin"/>                    <!-- With dataProvider: 3 runs -->
+                    <include name="testInvalidLogin"/>                  <!-- With dataProvider: 8 runs -->
+                    <include name="testEmptyCredentialsLogin"/>
+                    <include name="testRememberMeFunctionality"/>       <!-- With dataProvider: 4 runs -->
+                    <include name="testLoginPageElements"/>
+                    <include name="testLogoutFunctionality"/>           <!-- With dataProvider: 4 runs -->
+                    <include name="testPasswordFieldSecurity"/>
+                    <include name="testLoginNavigation"/>
+                    <include name="testSessionSecurity"/>
+                    <include name="testParallelLogin"/>                 <!-- With dataProvider: 10 parallel runs -->
+                </methods>
+            </class>
+
+            <!-- LoginTests: 11 test methods -->
+            <class name="tests.authentication.LoginTests">
+                <methods>
+                    <include name="testValidLogin"/>
+                    <include name="testInvalidEmailLogin"/>
+                    <include name="testEmptyCredentialsLogin"/>
+                    <include name="testRememberMeFunctionality"/>
+                    <include name="testLoginPageElements"/>
+                    <include name="testValidLoginSelenide"/>
+                    <include name="testInvalidEmailLoginSelenide"/>
+                    <include name="testFormValidationSelenide"/>
+                    <include name="testSelenideDirectElementAccess"/>
+                    <include name="testHybridSeleniumSelenideApproach"/>
+                </methods>
+            </class>
+
+            <!-- RegistrationTests: 8 test methods -->
+            <class name="tests.authentication.RegistrationTests">
+                <methods>
+                    <include name="testValidUserRegistration"/>
+                    <include name="testRegistrationWithInvalidEmail"/>
+                    <include name="testRegistrationWithMismatchedPasswords"/>
+                    <include name="testRegistrationWithWeakPassword"/>
+                    <include name="testRegistrationWithAllOptionalFields"/>
+                    <include name="testMultipleUserRegistration"/>      <!-- With dataProvider: 5 runs -->
+                    <include name="testEmailFormatValidation"/>         <!-- With dataProvider: 13 runs -->
+                    <include name="testRegistrationPageElements"/>
+                </methods>
+            </class>
+
+            <!-- PasswordRecoveryTests: 7 test methods -->
+            <class name="tests.authentication.PasswordRecoveryTests">
+                <methods>
+                    <include name="testValidPasswordRecovery"/>
+                    <include name="testInvalidEmailPasswordRecovery"/>  <!-- With dataProvider: ~5 runs -->
+                    <include name="testEmptyEmailPasswordRecovery"/>
+                    <include name="testPasswordRecoveryPageElements"/>
+                    <include name="testPasswordRecoveryNavigation"/>
+                    <include name="testMultipleRecoveryAttempts"/>
+                    <include name="testPasswordRecoverySecurity"/>
+                </methods>
+            </class>
+
+            <!-- ========================================
+                 NAVIGATION TESTS (15 test methods)
+                 ======================================== -->
+
+            <!-- HomePageTests: 5 test methods -->
+            <class name="tests.navigation.HomePageTests">
+                <methods>
+                    <include name="testHomePageLoad"/>
+                    <include name="testNavigationMenuElements"/>
+                    <include name="testCategoryNavigation"/>
+                    <include name="testFeaturedProducts"/>
+                    <include name="testPageElements"/>
+                </methods>
+            </class>
+
+            <!-- ComprehensiveHomePageTests: 10 test methods -->
+            <class name="tests.navigation.ComprehensiveHomePageTests">
+                <methods>
+                    <include name="testHomepageLoads"/>
+                    <include name="testFeaturedProductsDisplay"/>
+                    <include name="testMainNavigationCategories"/>      <!-- With dataProvider: ~7 runs -->
+                    <include name="testSearchFunctionalityFromHomepage"/>
+                    <include name="testShoppingCartAccessFromHomepage"/>
+                    <include name="testFooterLinksAndInformation"/>
+                    <include name="testUserAuthenticationLinksDisplay"/>
+                    <include name="testHomepageResponsiveDesign"/>
+                    <include name="testHomepageSEOElements"/>
+                    <include name="testHomepageAccessibility"/>
+                </methods>
+            </class>
+
+            <!-- ========================================
+                 PRODUCT TESTS (14 test methods)
+                 ======================================== -->
+
+            <!-- ProductSearchTests: 5 test methods -->
+            <class name="tests.products.ProductSearchTests">
+                <methods>
+                    <include name="testValidProductSearch"/>            <!-- With dataProvider: ~5 runs -->
+                    <include name="testInvalidProductSearch"/>          <!-- With dataProvider: ~3 runs -->
+                    <include name="testSearchEdgeCases"/>               <!-- With dataProvider: ~4 runs -->
+                    <include name="testSearchResultSorting"/>           <!-- With dataProvider: ~3 runs -->
+                    <include name="testSearchPerformance"/>
+                </methods>
+            </class>
+
+            <!-- ProductCatalogTests: 9 test methods -->
+            <class name="tests.products.ProductCatalogTests">
+                <methods>
+                    <include name="testCategoryNavigation"/>            <!-- With dataProvider: ~5 runs -->
+                    <include name="testProductDisplayAndLayout"/>
+                    <include name="testProductSorting"/>                <!-- With dataProvider: ~4 runs -->
+                    <include name="testProductNavigationToDetails"/>
+                    <include name="testCatalogPagination"/>
+                    <include name="testSubcategoryNavigation"/>         <!-- With dataProvider: ~6 runs -->
+                    <include name="testProductFiltering"/>              <!-- With dataProvider: ~3 runs -->
+                    <include name="testCatalogPerformance"/>
+                    <include name="testMobileResponsiveCatalog"/>
+                </methods>
+            </class>
+
+            <!-- ========================================
+                 SHOPPING CART TESTS (5 test methods)
+                 ======================================== -->
+
+            <!-- ShoppingCartTests: 5 test methods -->
+            <class name="tests.cart.ShoppingCartTests">
+                <methods>
+                    <include name="testAddItemsToCart"/>
+                    <include name="testUpdateCartItems"/>
+                    <include name="testCartCalculations"/>
+                    <include name="testCartPersistence"/>
+                    <include name="testCartErrorHandling"/>
+                </methods>
+            </class>
+
+            <!-- ========================================
+                 CHECKOUT TESTS (5 test methods)
+                 ======================================== -->
+
+            <!-- CheckoutTests: 5 test methods -->
+            <class name="tests.checkout.CheckoutTests">
+                <methods>
+                    <include name="testGuestCheckoutProcess"/>
+                    <include name="testRegisteredUserCheckout"/>        <!-- With dataProvider: ~3 runs -->
+                    <include name="testCheckoutFormValidation"/>
+                    <include name="testMultiplePaymentMethods"/>        <!-- With dataProvider: ~3 runs -->
+                    <include name="testCheckoutPerformance"/>
+                </methods>
+            </class>
+
+            <!-- ========================================
+                 ACCOUNT MANAGEMENT TESTS (4 test methods)
+                 ======================================== -->
+
+            <!-- AccountManagementTests: 4 test methods -->
+            <class name="tests.account.AccountManagementTests">
+                <methods>
+                    <include name="testViewAccountInformation"/>
+                    <include name="testOrderHistoryManagement"/>
+                    <include name="testAddressBookManagement"/>
+                    <include name="testAccountSecuritySettings"/>
+                </methods>
+            </class>
+
+            <!-- ========================================
+                 ERROR HANDLING TESTS (4 test methods)
+                 ======================================== -->
+
+            <!-- ErrorHandlingTests: 4 test methods -->
+            <class name="tests.error.ErrorHandlingTests">
+                <methods>
+                    <include name="testNetworkErrorHandling"/>
+                    <include name="testBrowserCompatibilityErrors"/>
+                    <include name="testSessionAndAuthErrorHandling"/>
+                    <include name="testDataValidationErrorHandling"/>
+                </methods>
+            </class>
+
+        </classes>
+    </test>
+
+</suite>

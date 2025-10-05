@@ -55,11 +55,11 @@
       },
       "product_grid": {
         "container": {
-          "primary": ".product-list, .item-list",
-          "secondary": "body",
-          "xpath": "//body",
+          "primary": ".product-grid",
+          "secondary": ".search-results",
+          "xpath": "//div[@class='product-grid' or @class='search-results']",
           "stability": "High",
-          "note": "DemoWebShop uses simple layout without explicit product grid container"
+          "note": "DemoWebShop uses .product-grid for search results and category listings"
         },
         "product_item": {
           "primary": ".item-box",
@@ -251,16 +251,23 @@
         }
       },
       "results": {
-        "results_count": {
+        "results_container": {
           "primary": ".search-results",
-          "secondary": "[class*='search-results']",
-          "xpath": "//div[contains(@class, 'search-results')]",
-          "stability": "Medium"
+          "secondary": ".product-grid",
+          "xpath": "//div[@class='search-results' or @class='product-grid']",
+          "stability": "High"
+        },
+        "results_count": {
+          "primary": ".item-box",
+          "secondary": "[class*='item-box']",
+          "xpath": "//div[contains(@class, 'item-box')]",
+          "stability": "Medium",
+          "note": "Count is determined by counting .item-box elements"
         },
         "no_results": {
-          "primary": ".no-result",
-          "secondary": "[class*='no-result']",
-          "xpath": "//div[contains(@class, 'no-result')]",
+          "primary": ".no-results",
+          "secondary": "div:contains('No results')",
+          "xpath": "//div[contains(text(), 'No results') or contains(text(), 'no results')]",
           "stability": "Medium"
         }
       }

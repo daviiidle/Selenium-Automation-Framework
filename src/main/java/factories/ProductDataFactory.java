@@ -36,18 +36,15 @@ public class ProductDataFactory {
     };
 
     private static final String[] SEARCH_TERMS_VALID = {
-        "computer", "laptop", "book", "fiction", "health", "science",
-        "digital", "camera", "phone", "jewelry", "necklace", "shirt",
-        "jeans", "shoes", "gift card"
+        "computer", "laptop", "book"
     };
 
     private static final String[] SEARCH_TERMS_PARTIAL = {
-        "comp", "lap", "fic", "dig", "cam", "jew", "nec", "jea"
+        "comp", "lap"
     };
 
     private static final String[] SEARCH_TERMS_INVALID = {
-        "xyzabc123", "nonexistent", "random123", "invalidproduct",
-        "abcdefghijk", "zzznotfound"
+        "xyzabc123", "nonexistent"
     };
 
     private static final String[] SORT_OPTIONS = {

@@ -189,7 +189,8 @@ public class RegisterPage extends BasePage {
 
     /**
      * Click register button
-     * @return HomePage if registration successful, RegisterPage if failed
+     * IMPORTANT: DemoWebShop does NOT auto-login after registration
+     * @return RegisterPage (user must manually log in after successful registration)
      */
     public BasePage clickRegisterButton() {
         try {
@@ -237,9 +238,9 @@ public class RegisterPage extends BasePage {
                 throw new RuntimeException("Register button could not be clicked with any method");
             }
 
-            // Wait briefly for processing
+            // Wait for page to process registration
             try {
-                Thread.sleep(1000);
+                Thread.sleep(4000);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
@@ -250,7 +251,16 @@ public class RegisterPage extends BasePage {
                 return this;
             } else {
                 logger.info("Registration appears successful");
-                return new HomePage(driver);
+                // Additional wait for page to fully load registration result
+                try {
+                    Thread.sleep(2000);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+                // CRITICAL: DemoWebShop does NOT auto-login after registration
+                // User must manually navigate to login page and log in
+                // Returning RegisterPage to indicate registration complete but not logged in
+                return this;
             }
 
         } catch (Exception e) {
@@ -273,13 +283,14 @@ public class RegisterPage extends BasePage {
 
     /**
      * Perform complete registration with all fields
+     * IMPORTANT: DemoWebShop does NOT auto-login after registration
      * @param gender User's gender ("Male" or "Female", optional)
      * @param firstName User's first name
      * @param lastName User's last name
      * @param email User's email
      * @param password User's password
      * @param confirmPassword Confirm password
-     * @return HomePage if successful, RegisterPage if failed
+     * @return RegisterPage (user must manually log in after successful registration)
      */
     public BasePage register(String gender, String firstName, String lastName,
                             String email, String password, String confirmPassword) {
@@ -417,7 +428,7 @@ public class RegisterPage extends BasePage {
                 try {
                     By errorBy = By.cssSelector(selector);
                     SelenideElement errorElement = $(errorBy);
-                    if (errorElement != null) {
+                    if (errorElement.exists()) {
                         String errorText = errorElement.getText();
                         if (!errorText.trim().isEmpty()) {
                             // Split by newlines and filter empty strings
@@ -425,7 +436,7 @@ public class RegisterPage extends BasePage {
                                     .stream()
                                     .map(String::trim)
                                     .filter(s -> !s.isEmpty())
-                                    .toList();
+                                    .collect(Collectors.toList());
                             if (!errors.isEmpty()) {
                                 logger.debug("Found validation errors with selector '{}': {}", selector, errors);
                                 return errors;
@@ -459,7 +470,7 @@ public class RegisterPage extends BasePage {
             try {
                 By summaryErrorSelector = SelectorUtils.getAuthSelector("authentication.registration_page.validation.summary_errors");
                 SelenideElement errorElement = $(summaryErrorSelector);
-                if (errorElement != null) {
+                if (errorElement != null && errorElement.exists()) {
                     String errorText = errorElement.getText();
                     if (!errorText.trim().isEmpty()) {
                         List<String> errors = List.of(errorText.split("\n"))

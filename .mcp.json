@@ -1,0 +1,22 @@
+{
+  "mcpServers": {
+    "selenium-debug": {
+      "command": "node",
+      "args": [
+        "selenium-debug-mcp/dist/index.js"
+      ]
+    },
+    "mvn-test-runner": {
+      "command": "node",
+      "args": [
+        "mvn-test-runner-mcp/dist/index.js"
+      ]
+    },
+    "framework-navigator": {
+      "command": "node",
+      "args": [
+        "framework-navigator-mcp/dist/index.js"
+      ]
+    }
+  }
+}

@@ -7,17 +7,20 @@ import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import com.codeborne.selenide.SelenideElement;
 import com.codeborne.selenide.ElementsCollection;
+import com.codeborne.selenide.Condition;
 import org.openqa.selenium.support.ui.Select;
 
 import java.math.BigDecimal;
 import java.text.NumberFormat;
 import java.text.ParseException;
+import java.time.Duration;
 import java.util.List;
 import java.util.Locale;
 import java.util.stream.Collectors;
 
 import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.$$;
+import com.codeborne.selenide.Selenide;
 
 /**
  * Page Object Model for Checkout Process
@@ -70,6 +73,14 @@ public class CheckoutPage extends BasePage {
     public CheckoutPage clickContinue() {
         By continueSelector = SelectorUtils.getCartSelector("cart_and_checkout.checkout_process.navigation_buttons.continue");
         click(continueSelector);
+
+        // Wait for AJAX loading to complete - checkout uses async step loading
+        try {
+            Thread.sleep(2000); // Wait for AJAX request to complete
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+
         waitForPageToLoad();
         logger.info("Clicked continue button");
         return this;
@@ -119,6 +130,20 @@ public class CheckoutPage extends BasePage {
      */
     public CheckoutPage fillBillingAddress(BillingAddressData addressData) {
         try {
+            // First, ensure "New Address" is selected to make form visible
+            try {
+                By addressSelectSelector = SelectorUtils.getCartSelector("cart_and_checkout.checkout_process.billing_address.new_address_option");
+                if ($(addressSelectSelector).exists()) {
+                    Select addressSelect = new Select($(addressSelectSelector).toWebElement());
+                    addressSelect.selectByVisibleText("New Address");
+                    // Wait for form to become visible
+                    By firstNameSelector = SelectorUtils.getCartSelector("cart_and_checkout.checkout_process.billing_address.first_name");
+                    $(firstNameSelector).shouldBe(Condition.visible, Duration.ofSeconds(5));
+                }
+            } catch (Exception e) {
+                logger.debug("Could not select 'New Address' option or it doesn't exist: {}", e.getMessage());
+            }
+
             // Fill required fields
             fillBillingField("first_name", addressData.firstName);
             fillBillingField("last_name", addressData.lastName);
@@ -143,10 +168,11 @@ public class CheckoutPage extends BasePage {
             if (addressData.country != null) {
                 selectBillingCountry(addressData.country);
                 // Wait for state dropdown to populate if applicable
+                By stateSelector = SelectorUtils.getCartSelector("cart_and_checkout.checkout_process.billing_address.state");
                 try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
+                    $(stateSelector).shouldBe(Condition.visible, Duration.ofSeconds(3));
+                } catch (Exception e) {
+                    logger.debug("State dropdown not visible or not applicable for selected country");
                 }
             }
             if (addressData.state != null) {
@@ -492,7 +518,47 @@ public class CheckoutPage extends BasePage {
      */
     public OrderCompletePage confirmOrder() {
         By confirmSelector = SelectorUtils.getCartSelector("cart_and_checkout.checkout_process.navigation_buttons.confirm_order");
-        click(confirmSelector);
+
+        // Try to scroll into view and wait for button to be visible
+        try {
+            SelenideElement confirmButton = $(confirmSelector);
+            confirmButton.scrollIntoView(true);
+            confirmButton.shouldBe(Condition.visible, Duration.ofSeconds(5));
+
+            // If still not clickable, use JavaScript click
+            if (!confirmButton.isDisplayed()) {
+                logger.warn("Confirm button not visible, using JavaScript click");
+                Selenide.executeJavaScript("arguments[0].click();", confirmButton);
+            } else {
+                click(confirmSelector);
+            }
+        } catch (Exception e) {
+            logger.warn("Standard click failed, trying JavaScript click: {}", e.getMessage());
+            Selenide.executeJavaScript("arguments[0].click();", $(confirmSelector));
+        }
+
+        // Handle any alerts that may appear (e.g., "Payment information is not entered")
+        try {
+            // Wait briefly for potential alert using WebDriverWait
+            org.openqa.selenium.support.ui.WebDriverWait wait =
+                new org.openqa.selenium.support.ui.WebDriverWait(driver, Duration.ofMillis(1000));
+            wait.until(org.openqa.selenium.support.ui.ExpectedConditions.alertIsPresent());
+
+            org.openqa.selenium.Alert alert = driver.switchTo().alert();
+            String alertText = alert.getText();
+            logger.warn("Alert appeared during order confirmation: {}", alertText);
+            alert.accept(); // Accept/dismiss the alert
+
+            // If alert indicates missing payment info, this is a validation error
+            if (alertText.toLowerCase().contains("payment")) {
+                logger.error("Payment information validation failed - alert: {}", alertText);
+                throw new RuntimeException("Order confirmation failed: " + alertText);
+            }
+        } catch (org.openqa.selenium.NoAlertPresentException | org.openqa.selenium.TimeoutException e) {
+            // No alert - normal flow
+            logger.debug("No alert present during order confirmation");
+        }
+
         waitForPageToLoad();
         logger.info("Confirmed and placed order");
         return new OrderCompletePage(driver);
@@ -810,7 +876,7 @@ public class CheckoutPage extends BasePage {
      */
     public boolean isGuestCheckoutOptionDisplayed() {
         try {
-            By guestCheckoutSelector = By.cssSelector("input[value='1'], .guest-checkout");
+            By guestCheckoutSelector = By.cssSelector(".checkout-as-guest-button, input[value='1'], .guest-checkout");
             return isElementDisplayed(guestCheckoutSelector);
         } catch (Exception e) {
             return false;
@@ -823,8 +889,9 @@ public class CheckoutPage extends BasePage {
      */
     public CheckoutPage selectGuestCheckout() {
         try {
-            By guestCheckoutSelector = By.cssSelector("input[value='1'], .guest-checkout");
+            By guestCheckoutSelector = By.cssSelector(".checkout-as-guest-button, input[value='1'], .guest-checkout");
             click(guestCheckoutSelector);
+            waitForPageToLoad();
             logger.info("Selected guest checkout");
         } catch (Exception e) {
             logger.warn("Could not select guest checkout: {}", e.getMessage());

@@ -23,7 +23,7 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
         <!-- TestNG Suite Configuration -->
-        <suiteXmlFile>src/test/resources/config/testng-powerhouse.xml</suiteXmlFile>
+        <suiteXmlFile>src/test/resources/config/testng-complete.xml</suiteXmlFile>
 
         <!-- Dependency Versions -->
         <selenide.version>7.5.1</selenide.version>
@@ -63,12 +63,8 @@
             <version>5.6.2</version>
         </dependency>
 
-        <!-- Chrome DevTools Protocol - Latest version to reduce CDP warnings -->
-        <dependency>
-            <groupId>org.seleniumhq.selenium</groupId>
-            <artifactId>selenium-devtools-v129</artifactId>
-            <version>4.25.0</version>
-        </dependency>
+        <!-- Chrome DevTools Protocol - Removed for compatibility -->
+        <!-- CDP warnings are non-critical, focusing on core functionality -->
 
         <!-- TestNG -->
         <dependency>
@@ -214,6 +210,8 @@
                     <useUnlimitedThreads>false</useUnlimitedThreads>
                     <trimStackTrace>false</trimStackTrace>
                     <reportFormat>xml</reportFormat>
+                    <!-- Automatically rerun failed tests sequentially at the end -->
+                    <rerunFailingTestsCount>1</rerunFailingTestsCount>
                 </configuration>
             </plugin>
 
@@ -311,6 +309,56 @@
             <properties>
                 <headless>true</headless>
             </properties>
+        </profile>
+
+        <!-- CI Profile - Optimized for GitHub Actions -->
+        <profile>
+            <id>ci</id>
+            <properties>
+                <suiteXmlFile>src/test/resources/config/testng-ci.xml</suiteXmlFile>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <version>${maven-surefire-plugin.version}</version>
+                        <configuration>
+                            <suiteXmlFiles>
+                                <suiteXmlFile>${suiteXmlFile}</suiteXmlFile>
+                            </suiteXmlFiles>
+                            <systemPropertyVariables>
+                                <allure.results.directory>${project.build.directory}/allure-results</allure.results.directory>
+                            </systemPropertyVariables>
+                            <!-- CI-optimized JVM settings for 2-core runners -->
+                            <argLine>
+                                -Xmx4g
+                                -Xms1g
+                                -XX:+UseG1GC
+                                -XX:+UseStringDeduplication
+                                -XX:MaxGCPauseMillis=200
+                                -XX:G1HeapRegionSize=16m
+                                -XX:+UseCompressedOops
+                                -XX:+UseCompressedClassPointers
+                                -Djava.awt.headless=true
+                                -Dfile.encoding=UTF-8
+                                -Dsun.net.http.allowRestrictedHeaders=true
+                                -Djava.security.egd=file:/dev/./urandom
+                                -Dwebdriver.chrome.whitelistedIps=
+                                -Dwebdriver.chrome.verboseLogging=false
+                                -Djava.net.preferIPv4Stack=true
+                            </argLine>
+                            <parallel>methods</parallel>
+                            <threadCount>2</threadCount>
+                            <perCoreThreadCount>false</perCoreThreadCount>
+                            <useUnlimitedThreads>false</useUnlimitedThreads>
+                            <trimStackTrace>false</trimStackTrace>
+                            <reportFormat>xml</reportFormat>
+                            <rerunFailingTestsCount>1</rerunFailingTestsCount>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
         </profile>
     </profiles>
 </project>

@@ -95,9 +95,9 @@
           "stability": "Medium"
         },
         "checkout_button": {
-          "primary": "input[value='Checkout']",
-          "secondary": "[class*='checkout-button']",
-          "xpath": "//input[@value='Checkout']",
+          "primary": "#checkout",
+          "secondary": "button[name='checkout']",
+          "xpath": "//button[@id='checkout']",
           "stability": "High"
         }
       },

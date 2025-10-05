@@ -122,15 +122,24 @@ public class ShoppingCartTests extends BaseTest {
         cartPage.updateItemQuantity(firstItemName, newQuantity);
         cartPage.clickUpdateCart();
 
+        // Wait for cart to update (page reload or AJAX) - using Selenide wait instead of Thread.sleep
+        com.codeborne.selenide.Selenide.sleep(5000); // Allow time for recalculation
+
+        // Refresh page to ensure we get updated values
+        driver.navigate().refresh();
+
+        // Wait for refresh to complete
+        com.codeborne.selenide.Selenide.sleep(2000);
+
         // Verify quantity updated
         int updatedQuantity = cartPage.getItemQuantity(firstItemName);
         softAssert.assertEquals(updatedQuantity, newQuantity,
                                "Item quantity should be updated");
 
-        // Verify total recalculated
+        // Verify total recalculated - should be higher since we added more items
         double updatedTotal = cartPage.getCartTotal();
-        softAssert.assertTrue(updatedTotal != initialTotal,
-                             "Cart total should recalculate after quantity update");
+        softAssert.assertTrue(updatedTotal > initialTotal,
+                             "Cart total should increase after quantity update");
 
         // Test removing an item by setting quantity to 0
         if (cartPage.getTotalItemCount() > 1) {

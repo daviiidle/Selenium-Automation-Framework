@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
+<suite name="DemoWebShop Hybrid Test Suite" verbose="1">
+
+    <parameter name="browser" value="chrome"/>
+    <parameter name="headless" value="true"/>
+
+    <!-- Parallel execution for stable tests -->
+    <test name="Parallel Tests - Authentication, Navigation, Products"
+          preserve-order="false"
+          parallel="methods"
+          thread-count="4">
+        <classes>
+            <!-- Authentication Tests -->
+            <class name="tests.authentication.ComprehensiveLoginTests"/>
+            <class name="tests.authentication.RegistrationTests"/>
+            <class name="tests.authentication.PasswordRecoveryTests"/>
+
+            <!-- Product Tests -->
+            <class name="tests.products.ProductCatalogTests"/>
+
+            <!-- Checkout Tests -->
+            <class name="tests.checkout.CheckoutTests"/>
+        </classes>
+    </test>
+
+    <!-- Sequential execution for timing-sensitive tests that fail in parallel -->
+    <test name="Sequential Tests - Cart, Search, Account"
+          preserve-order="true"
+          parallel="false"
+          thread-count="1">
+        <classes>
+            <class name="tests.cart.ShoppingCartTests"/>
+            <class name="tests.products.ProductSearchTests"/>
+            <class name="tests.account.AccountManagementTests"/>
+        </classes>
+    </test>
+
+</suite>

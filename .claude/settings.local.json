@@ -13,9 +13,37 @@
       "Bash(mvn test-compile:*)",
       "Read(//mnt/c/Users/D/**)",
       "Bash(java:*)",
-      "WebFetch(domain:mvnrepository.com)"
+      "WebFetch(domain:mvnrepository.com)",
+      "Read(//home/david/.cache/**)",
+      "Bash(for file in src/test/java/tests/**/*.java)",
+      "Bash(do echo \"=== $file ===\")",
+      "Bash(grep:*)",
+      "Bash(done)",
+      "mcp__selenium-debug__analyze-test-failures",
+      "mcp__selenium-debug__find-working-selector",
+      "mcp__selenium-debug__inspect-page-object",
+      "mcp__selenium-debug__validate-selector-live",
+      "mcp__selenium-debug__list-selector-files",
+      "mcp__selenium-debug__read-selector-file",
+      "mcp__selenium-debug__find-alternative-selectors",
+      "mcp__selenium-debug__update-selector-file",
+      "mcp__selenium-debug__get-test-summary",
+      "mcp__selenium-debug__analyze-failure-patterns",
+      "mcp__selenium-debug__diagnose-error",
+      "mcp__selenium-debug__suggest-fixes",
+      "mcp__selenium-debug__test-page-navigation",
+      "mcp__mvn-test-runner__run-all-tests",
+      "mcp__mvn-test-runner__run-test-class",
+      "mcp__mvn-test-runner__run-test-method",
+      "mcp__selenium-debug__test-wait-strategies",
+      "mcp__mvn-test-runner__get-failure-summary",
+      "mcp__selenium-debug__inspect-test-class"
     ],
     "deny": [],
     "ask": []
-  }
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "selenium-debug"
+  ]
 }

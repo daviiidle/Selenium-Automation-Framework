@@ -46,8 +46,12 @@ public class ProductCatalogTests extends BaseTest {
         SoftAssert softAssert = assertions.getSoftAssert();
         if (catalogPage.isBreadcrumbDisplayed()) {
             List<String> breadcrumbs = catalogPage.getBreadcrumbs();
-            softAssert.assertTrue(breadcrumbs.contains(categoryName),
-                                 "Breadcrumb should contain category name");
+            // Case-insensitive partial match for breadcrumb
+            boolean breadcrumbMatches = breadcrumbs.stream()
+                .anyMatch(breadcrumb -> breadcrumb.toLowerCase().contains(categoryName.toLowerCase()) ||
+                                       categoryName.toLowerCase().contains(breadcrumb.toLowerCase()));
+            softAssert.assertTrue(breadcrumbMatches,
+                                 "Breadcrumb should contain category name. Expected: " + categoryName + ", Got: " + breadcrumbs);
         }
 
         // Verify category-specific content

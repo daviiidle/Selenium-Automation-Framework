@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
+<suite name="DemoWebShop Performance Test Suite"
+       parallel="methods"
+       thread-count="2"
+       verbose="2"
+       data-provider-thread-count="2"
+       time-out="600000"
+       preserve-order="false"
+       allow-return-values="true">
+
+    <parameter name="browser" value="chrome"/>
+    <parameter name="headless" value="true"/>
+
+    <!-- Performance tests only -->
+
+    <test name="Performance Tests">
+        <groups>
+            <run>
+                <include name="performance"/>
+            </run>
+        </groups>
+
+        <classes>
+            <!-- All test classes -->
+            <class name="tests.authentication.ComprehensiveLoginTests"/>
+            <class name="tests.navigation.ComprehensiveHomePageTests"/>
+            <class name="tests.products.ProductSearchTests"/>
+            <class name="tests.products.ProductCatalogTests"/>
+            <class name="tests.checkout.CheckoutTests"/>
+        </classes>
+    </test>
+
+</suite>

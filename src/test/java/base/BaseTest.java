@@ -25,33 +25,74 @@ public abstract class BaseTest {
     public void setUp(Method method) {
         logger.info("Starting test: {}.{}", this.getClass().getSimpleName(), method.getName());
 
-        try {
-            config = ConfigurationManager.getInstance();
-            String browserName = config.getBrowser();
-            logger.info("Using browser: {} in headless mode: {}", browserName, config.isHeadless());
+        int retryCount = 0;
+        int maxRetries = 3;
+        Exception lastException = null;
 
-            BrowserType browserType = BrowserType.fromString(browserName);
-            driver = WebDriverFactory.createDriver(browserType);
+        while (retryCount < maxRetries) {
+            try {
+                config = ConfigurationManager.getInstance();
+                String browserName = config.getBrowser();
+                logger.info("Using browser: {} in headless mode: {} (attempt {})", browserName, config.isHeadless(), retryCount + 1);
 
-            if (driver == null) {
-                throw new RuntimeException("WebDriver initialization failed - driver is null");
+                BrowserType browserType = BrowserType.fromString(browserName);
+                driver = WebDriverFactory.createDriver(browserType);
+
+                if (driver == null) {
+                    throw new RuntimeException("WebDriver initialization failed - driver is null");
+                }
+                logger.info("WebDriver initialized successfully");
+
+                homePage = new HomePage(driver);
+                logger.info("HomePage object created");
+
+                // Add retry for navigation as well
+                try {
+                    homePage.navigateToHomePage();
+                    logger.info("Navigated to homepage successfully");
+                } catch (Exception navException) {
+                    logger.warn("Navigation failed on attempt {}: {}", retryCount + 1, navException.getMessage());
+                    if (retryCount == maxRetries - 1) {
+                        throw navException;
+                    }
+                    // Clean up and retry
+                    if (driver != null) {
+                        try { driver.quit(); } catch (Exception ignored) {}
+                    }
+                    Thread.sleep(2000); // Wait before retry
+                    retryCount++;
+                    continue;
+                }
+
+                // Call additional setup hook for test classes
+                additionalSetup();
+
+                logger.info("Test setup completed for: {}", method.getName());
+                return; // Success, exit retry loop
+
+            } catch (Exception e) {
+                lastException = e;
+                logger.warn("Test setup failed on attempt {} for: {} - {}", retryCount + 1, method.getName(), e.getMessage());
+
+                // Clean up driver before retry
+                if (driver != null) {
+                    try { WebDriverFactory.quitDriver(); } catch (Exception ignored) {}
+                    driver = null;
+                }
+
+                retryCount++;
+
+                if (retryCount < maxRetries) {
+                    try {
+                        Thread.sleep(3000); // Wait between retries
+                    } catch (InterruptedException ignored) {}
+                }
             }
-            logger.info("WebDriver initialized successfully");
-
-            homePage = new HomePage(driver);
-            logger.info("HomePage object created");
-
-            homePage.navigateToHomePage();
-            logger.info("Navigated to homepage");
-
-            // Call additional setup hook for test classes
-            additionalSetup();
-
-            logger.info("Test setup completed for: {}", method.getName());
-        } catch (Exception e) {
-            logger.error("Error during test setup for: {}", method.getName(), e);
-            throw new RuntimeException("Test setup failed", e);
         }
+
+        // If all retries failed, throw the last exception
+        logger.error("Test setup failed after {} attempts for: {}", maxRetries, method.getName(), lastException);
+        throw new RuntimeException("Test setup failed after " + maxRetries + " attempts", lastException);
     }
 
     @AfterMethod
@@ -63,17 +104,47 @@ public abstract class BaseTest {
             additionalTeardown();
 
             if (driver != null) {
-                // Take screenshot on failure
-                if (!isTestPassed()) {
-                    String screenshotName = this.getClass().getSimpleName() + "_" + method.getName() + "_failed";
-                    ScreenshotUtils.takeScreenshot(driver, screenshotName);
+                try {
+                    // Take screenshot on failure - check if driver is still valid
+                    if (!isTestPassed() && isDriverValid()) {
+                        String screenshotName = this.getClass().getSimpleName() + "_" + method.getName() + "_failed";
+                        ScreenshotUtils.takeScreenshot(driver, screenshotName);
+                    }
+                } catch (Exception screenshotException) {
+                    logger.warn("Could not take screenshot during teardown: {}", screenshotException.getMessage());
                 }
             }
         } catch (Exception e) {
             logger.error("Error during teardown: {}", e.getMessage());
         } finally {
-            WebDriverFactory.quitDriver();
+            // Safe driver cleanup
+            try {
+                if (driver != null) {
+                    WebDriverFactory.quitDriver();
+                }
+            } catch (Exception driverException) {
+                logger.warn("Error closing driver: {}", driverException.getMessage());
+            }
+            driver = null; // Ensure driver reference is cleared
             logger.info("Test cleanup completed for: {}", method.getName());
+        }
+    }
+
+    /**
+     * Check if driver is still valid and can be used
+     * @return true if driver is valid
+     */
+    private boolean isDriverValid() {
+        try {
+            if (driver == null) {
+                return false;
+            }
+            // Try to get current URL to verify driver is still active
+            driver.getCurrentUrl();
+            return true;
+        } catch (Exception e) {
+            logger.debug("Driver is no longer valid: {}", e.getMessage());
+            return false;
         }
     }
 

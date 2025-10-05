@@ -90,11 +90,24 @@ public class ProductSearchPage extends BasePage {
      */
     public int getResultsCount() {
         try {
-            By resultsSelector = SelectorUtils.getProductSelector("product_pages.search_results.results.results_count");
-            String resultsText = getText(resultsSelector);
-            // Extract number from text like "16 item(s)"
-            return Integer.parseInt(resultsText.replaceAll("[^0-9]", ""));
+            // Wait for page to stabilize after search
+            waitForPageToLoad();
+
+            // Simple wait for search results to appear
+            com.codeborne.selenide.Selenide.sleep(1000);
+
+            // Check for .item-box elements (primary selector)
+            ElementsCollection items = $$(By.cssSelector(".item-box"));
+            if (items.size() > 0) {
+                logger.debug("Found {} search results with .item-box", items.size());
+                return items.size();
+            }
+
+            logger.debug("No .item-box elements found, returning 0");
+            return 0;
+
         } catch (Exception e) {
+            logger.warn("Failed to get results count: {}", e.getMessage());
             return 0;
         }
     }
@@ -105,9 +118,51 @@ public class ProductSearchPage extends BasePage {
      */
     public boolean hasNoResults() {
         try {
-            By noResultsSelector = SelectorUtils.getProductSelector("product_pages.search_results.results.no_results");
-            return isElementDisplayed(noResultsSelector);
+            // Try multiple selectors for no results message
+            String[] noResultsSelectors = {
+                ".no-results",
+                ".no-results-message",
+                ".empty-results",
+                ".search-no-results",
+                "//div[contains(text(), 'No products were found')]",
+                "//div[contains(text(), 'no results')]",
+                "//div[contains(text(), 'No results')]",
+                "//p[contains(text(), 'No products')]",
+                "//span[contains(text(), 'No products')]"
+            };
+
+            for (String selector : noResultsSelectors) {
+                try {
+                    By noResultsBy;
+                    if (selector.startsWith("//")) {
+                        noResultsBy = By.xpath(selector);
+                    } else {
+                        noResultsBy = By.cssSelector(selector);
+                    }
+
+                    if (waitUtils.softWaitForElementToBeVisible(noResultsBy, 2) != null) {
+                        logger.debug("Found no results message with selector: {}", selector);
+                        return true;
+                    }
+                } catch (Exception ignored) {
+                    // Continue to next selector
+                }
+            }
+
+            // Fallback to SelectorUtils method
+            try {
+                By noResultsSelector = SelectorUtils.getProductSelector("product_pages.search_results.results.no_results");
+                if (isElementDisplayed(noResultsSelector)) {
+                    return true;
+                }
+            } catch (Exception ignored) {
+                // SelectorUtils method failed
+            }
+
+            // Final fallback - check if results count is 0
+            return getResultsCount() == 0;
         } catch (Exception e) {
+            logger.debug("Error checking for no results: {}", e.getMessage());
             return getResultsCount() == 0;
         }
     }
@@ -132,9 +187,10 @@ public class ProductSearchPage extends BasePage {
      */
     public boolean isSearchResultsDisplayed() {
         try {
-            By resultsContainerSelector = SelectorUtils.getProductSelector("product_pages.category_listing.product_grid.container");
+            By resultsContainerSelector = SelectorUtils.getProductSelector("product_pages.search_results.results.results_container");
             return isElementDisplayed(resultsContainerSelector) && !hasNoResults();
         } catch (Exception e) {
+            logger.warn("Failed to check if search results are displayed: {}", e.getMessage());
             return false;
         }
     }
@@ -185,9 +241,42 @@ public class ProductSearchPage extends BasePage {
             if (currentUrl.contains("q=")) {
                 String[] parts = currentUrl.split("q=");
                 if (parts.length > 1) {
-                    return parts[1].split("&")[0];
+                    String term = parts[1].split("&")[0];
+                    // URL decode the term
+                    try {
+                        term = java.net.URLDecoder.decode(term, "UTF-8");
+                    } catch (Exception e) {
+                        // Return as-is if decoding fails
+                    }
+                    return term;
                 }
             }
+
+            // Fallback: try to get from search input field value
+            try {
+                String[] searchInputSelectors = {
+                    "input[name='q']",
+                    "#small-searchterms",
+                    ".search-box-text"
+                };
+
+                for (String selector : searchInputSelectors) {
+                    try {
+                        SelenideElement searchInput = $(By.cssSelector(selector));
+                        if (searchInput.exists()) {
+                            String value = searchInput.getValue();
+                            if (value != null && !value.isEmpty() && !value.equals("Search store")) {
+                                return value;
+                            }
+                        }
+                    } catch (Exception ignored) {
+                        // Continue to next selector
+                    }
+                }
+            } catch (Exception ignored) {
+                // Fallback failed
+            }
+
             return "";
         } catch (Exception e) {
             return "";

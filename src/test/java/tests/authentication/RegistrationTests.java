@@ -51,8 +51,10 @@ public class RegistrationTests extends BaseTest {
             registerPage.subscribeToNewsletter();
         }
 
-        homePage = (HomePage) registerPage.clickRegisterButton();
+        registerPage.clickRegisterButton();
 
+        // CRITICAL: DemoWebShop does NOT auto-login after registration
+        // Registration tests only verify registration success, not login
         logger.info("User registration test completed for: {}", newUser.getEmail());
     }
 
@@ -137,8 +139,9 @@ public class RegistrationTests extends BaseTest {
                    .confirmPassword(newUser.getPassword())
                    .subscribeToNewsletter();
 
-        homePage = (HomePage) registerPage.clickRegisterButton();
+        registerPage.clickRegisterButton();
 
+        // CRITICAL: DemoWebShop does NOT auto-login after registration
         assertions.assertAll();
         logger.info("=== REG_005 completed successfully for: {} ===", newUser.getEmail());
     }
@@ -169,10 +172,11 @@ public class RegistrationTests extends BaseTest {
             registerPage.subscribeToNewsletter();
         }
 
-        HomePage resultPage = (HomePage) registerPage.clickRegisterButton();
+        registerPage.clickRegisterButton();
 
+        // CRITICAL: DemoWebShop does NOT auto-login after registration
+        // Only verify registration success, not login status
         assertions.assertRegistrationSuccess(registerPage, user);
-        assertions.assertUserLoggedIn(resultPage, user.getEmail());
 
         assertions.assertAll();
         logger.info("=== REG_006 completed: {} for user {} ===", testDescription, user.getEmail());

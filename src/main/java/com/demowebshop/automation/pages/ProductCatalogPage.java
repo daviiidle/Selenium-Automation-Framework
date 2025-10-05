@@ -470,8 +470,38 @@ public class ProductCatalogPage extends BasePage {
      */
     public boolean isBreadcrumbDisplayed() {
         try {
-            By breadcrumbSelector = By.cssSelector(".breadcrumb");
-            return isElementDisplayed(breadcrumbSelector);
+            // DemoWebShop might use different breadcrumb selectors
+            String[] breadcrumbSelectors = {
+                ".breadcrumb",
+                ".bread-crumb",
+                ".navigation-path",
+                ".page-path",
+                ".category-path",
+                ".breadcrumbs",
+                ".nav-breadcrumb",
+                "//div[contains(@class, 'breadcrumb')]",
+                "//div[contains(@class, 'bread')]",
+                "//nav[contains(@class, 'breadcrumb')]"
+            };
+
+            for (String selector : breadcrumbSelectors) {
+                try {
+                    By breadcrumbBy;
+                    if (selector.startsWith("//")) {
+                        breadcrumbBy = By.xpath(selector);
+                    } else {
+                        breadcrumbBy = By.cssSelector(selector);
+                    }
+
+                    if (isElementDisplayed(breadcrumbBy)) {
+                        return true;
+                    }
+                } catch (Exception ignored) {
+                    // Continue to next selector
+                }
+            }
+
+            return false;
         } catch (Exception e) {
             return false;
         }
@@ -483,11 +513,62 @@ public class ProductCatalogPage extends BasePage {
      */
     public List<String> getBreadcrumbs() {
         try {
-            By breadcrumbSelector = By.cssSelector(".breadcrumb a");
-            ElementsCollection breadcrumbElements = $$(breadcrumbSelector);
-            return breadcrumbElements.stream()
-                    .map(SelenideElement::getText)
-                    .collect(Collectors.toList());
+            // First try to get breadcrumb container text and split it
+            String[] breadcrumbContainerSelectors = {
+                ".breadcrumb",
+                ".bread-crumb",
+                ".navigation-path",
+                ".page-path"
+            };
+
+            for (String selector : breadcrumbContainerSelectors) {
+                try {
+                    SelenideElement breadcrumbContainer = $(By.cssSelector(selector));
+                    if (breadcrumbContainer.exists() && breadcrumbContainer.isDisplayed()) {
+                        String breadcrumbText = breadcrumbContainer.getText().trim();
+                        if (!breadcrumbText.isEmpty()) {
+                            // Split by common separators like / or >
+                            List<String> items = java.util.Arrays.stream(breadcrumbText.split("[/>]"))
+                                    .map(String::trim)
+                                    .filter(text -> !text.isEmpty())
+                                    .collect(Collectors.toList());
+                            if (!items.isEmpty()) {
+                                logger.debug("Found breadcrumbs via container: {}", items);
+                                return items;
+                            }
+                        }
+                    }
+                } catch (Exception ignored) {
+                    // Continue to next selector
+                }
+            }
+
+            // Fallback to link-based approach
+            String[] breadcrumbLinkSelectors = {
+                ".breadcrumb a",
+                ".bread-crumb a",
+                ".navigation-path a",
+                ".page-path a",
+                ".category-path a",
+                ".breadcrumbs a",
+                ".nav-breadcrumb a"
+            };
+
+            for (String selector : breadcrumbLinkSelectors) {
+                try {
+                    ElementsCollection breadcrumbElements = $$(By.cssSelector(selector));
+                    if (breadcrumbElements.size() > 0) {
+                        return breadcrumbElements.stream()
+                                .map(SelenideElement::getText)
+                                .filter(text -> text != null && !text.trim().isEmpty())
+                                .collect(Collectors.toList());
+                    }
+                } catch (Exception ignored) {
+                    // Continue to next selector
+                }
+            }
+
+            return List.of();
         } catch (Exception e) {
             return List.of();
         }

@@ -121,9 +121,12 @@ public class UserDataFactory {
     public static String generateUniqueEmail(String firstName, String lastName) {
         String domain = DOMAINS[random.nextInt(DOMAINS.length)];
         String timestamp = String.valueOf(System.currentTimeMillis());
-        String randomNumber = String.valueOf(random.nextInt(1000));
+        String nanoTime = String.valueOf(System.nanoTime());
+        String randomNumber = String.valueOf(random.nextInt(100000)); // Larger range
+        String threadId = String.valueOf(Thread.currentThread().getId());
 
-        return (firstName + "." + lastName + "." + timestamp + "." + randomNumber + "@" + domain).toLowerCase();
+        // Use combination of timestamp, nanotime, thread ID and random for maximum uniqueness
+        return (firstName + "." + lastName + "." + timestamp + "." + nanoTime.substring(nanoTime.length() - 6) + "." + threadId + "." + randomNumber + "@" + domain).toLowerCase();
     }
 
     public static String generateSecurePassword() {
