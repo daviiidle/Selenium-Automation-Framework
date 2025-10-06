@@ -64,6 +64,37 @@ Tests that are temporarily excluded from CI execution due to flakiness or enviro
 
 ---
 
+### 3. ShoppingCartTests.testUpdateCartItems
+
+**Status:** ⚠️ Quarantined
+**Date Quarantined:** 2025-10-06
+**Reason:** Flaky - sleep interruption in CI environment (same pattern as #2)
+**Error:** `RuntimeException: java.lang.InterruptedException: sleep interrupted`
+**Location:** `src/test/java/tests/cart/ShoppingCartTests.java:126`
+**Excluded From:**
+- `testng-ci.xml` (CI configuration)
+
+**Investigation Notes:**
+- Same sleep interruption issue affecting multiple tests
+- CI environment appears to aggressively interrupt Thread.sleep()
+- Pattern suggests systemic issue with sleep-based waits in parallel execution
+
+**Action Items:**
+- [ ] Identify all Thread.sleep() calls in test suite
+- [ ] Replace with WebDriverWait or TestNG implicit waits
+- [ ] Consider removing Thread.sleep() entirely from framework
+- [ ] Use explicit waits for element visibility/clickability instead
+
+**To Re-enable:**
+1. Remove Thread.sleep() from test method
+2. Replace with proper WebDriverWait
+3. Verify test passes locally with CI profile (-Pci)
+4. Remove exclusion from `testng-ci.xml`
+5. Run CI to confirm
+6. Update this document
+
+---
+
 ## Quarantine Guidelines
 
 ### When to Quarantine a Test

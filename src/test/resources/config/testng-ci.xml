@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
 <suite name="DemoWebShop CI Test Suite"
-       parallel="methods"
-       thread-count="2"
+       parallel="none"
+       thread-count="1"
        verbose="2"
-       data-provider-thread-count="2"
+       data-provider-thread-count="1"
        time-out="300000"
        preserve-order="false"
        allow-return-values="true">
@@ -31,12 +31,7 @@
             <class name="tests.navigation.ComprehensiveHomePageTests"/>
 
             <!-- Product Tests -->
-            <class name="tests.products.ProductSearchTests">
-                <methods>
-                    <!-- QUARANTINED: Failing in CI - search not returning results -->
-                    <exclude name="testValidProductSearch"/>
-                </methods>
-            </class>
+            <class name="tests.products.ProductSearchTests"/>
             <class name="tests.products.ProductCatalogTests"/>
 
             <!-- Shopping Cart Tests -->
@@ -46,12 +41,7 @@
             <class name="tests.checkout.CheckoutTests"/>
 
             <!-- Account Management Tests -->
-            <class name="tests.account.AccountManagementTests">
-                <methods>
-                    <!-- QUARANTINED: Flaky - intermittent sleep interruption in CI -->
-                    <exclude name="testOrderHistoryManagement"/>
-                </methods>
-            </class>
+            <class name="tests.account.AccountManagementTests"/>
 
             <!-- Error Handling Tests -->
             <class name="tests.error.ErrorHandlingTests"/>
