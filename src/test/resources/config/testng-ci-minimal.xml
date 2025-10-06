@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
+<suite name="DemoWebShop Minimal CI Suite"
+       parallel="none"
+       thread-count="1"
+       verbose="2"
+       time-out="300000">
+
+    <parameter name="browser" value="chrome"/>
+    <parameter name="headless" value="true"/>
+
+    <!-- MINIMAL SUITE: Only the most stable tests -->
+
+    <test name="Smoke Tests Only">
+        <classes>
+            <!-- Only the most basic, stable tests -->
+            <class name="tests.authentication.LoginTests">
+                <methods>
+                    <include name="testValidLogin"/>
+                </methods>
+            </class>
+
+            <class name="tests.navigation.HomePageTests">
+                <methods>
+                    <include name="testHomePageLoad"/>
+                </methods>
+            </class>
+
+            <class name="tests.cart.ShoppingCartTests">
+                <methods>
+                    <include name="testAddItemsToCart"/>
+                </methods>
+            </class>
+        </classes>
+    </test>
+
+</suite>

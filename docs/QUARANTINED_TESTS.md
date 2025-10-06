@@ -35,7 +35,38 @@ Tests that are temporarily excluded from CI execution due to flakiness or enviro
 
 ---
 
-### 2. ProductSearchTests.testValidProductSearch
+### 2. ProductCatalogTests.testCategoryNavigation
+
+**Status:** ⚠️ Quarantined
+**Date Quarantined:** 2025-10-06
+**Reason:** Click element interruption in CI (specifically Digital downloads category)
+**Error:** `RuntimeException: Failed to click element after 3 attempts due to interruption`
+**Location:** `src/test/java/tests/products/ProductCatalogTests.java` (data provider driven test)
+**Excluded From:**
+- `testng-ci.xml` (CI configuration)
+
+**Investigation Notes:**
+- Test passes for most categories (Books, Computers, Electronics, Apparel, Jewelry)
+- Fails specifically on "Digital downloads" variation
+- Element click being interrupted by CI environment
+- May be timing/stale element issue specific to this category
+
+**Action Items:**
+- [ ] Check if Digital downloads page loads differently than other categories
+- [ ] Add retry logic or better wait conditions for element clicks
+- [ ] Investigate why 3 retry attempts all fail for this specific category
+- [ ] Consider adding explicit wait before click
+
+**To Re-enable:**
+1. Fix click retry logic or add proper wait
+2. Test locally: `mvn test -Pci -Dtest=ProductCatalogTests#testCategoryNavigation`
+3. Uncomment method in `testng-ci.xml`
+4. Run CI to confirm
+5. Update this document
+
+---
+
+### 3. ProductSearchTests.testValidProductSearch
 
 **Status:** ⚠️ Quarantined
 **Date Quarantined:** 2025-10-06
