@@ -4,7 +4,38 @@ Tests that are temporarily excluded from CI execution due to flakiness or enviro
 
 ## Current Quarantined Tests
 
-### 1. ProductSearchTests.testValidProductSearch
+### 1. AccountManagementTests (entire class)
+
+**Status:** ⚠️ Quarantined
+**Date Quarantined:** 2025-10-06
+**Reason:** Sleep interruption in helper method createAndLoginUser
+**Error:** `Interrupted sleep interrupted` at line 57
+**Location:** `src/test/java/tests/account/AccountManagementTests.java:57`
+**Excluded From:**
+- `testng-ci.xml` (entire class commented out)
+
+**Investigation Notes:**
+- Sleep interruption happening in @BeforeMethod or helper method
+- Even in sequential execution, CI is interrupting Thread.sleep()
+- This affects ALL tests in AccountManagementTests class
+- Likely a long-running operation hitting CI timeout
+
+**Action Items:**
+- [ ] Find Thread.sleep() at line 57 in createAndLoginUser method
+- [ ] Replace sleep with WebDriverWait for element/condition
+- [ ] Check if this is waiting for user creation/login to complete
+- [ ] Test locally: `mvn test -Pci -Dtest=AccountManagementTests`
+
+**To Re-enable:**
+1. Remove Thread.sleep() from createAndLoginUser helper
+2. Replace with proper explicit wait
+3. Uncomment class in `testng-ci.xml`
+4. Run CI to confirm
+5. Update this document
+
+---
+
+### 2. ProductSearchTests.testValidProductSearch
 
 **Status:** ⚠️ Quarantined
 **Date Quarantined:** 2025-10-06
