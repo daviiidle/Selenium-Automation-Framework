@@ -138,7 +138,7 @@ public class ProductDataProvider {
     /**
      * Provides parallel search data for performance testing
      */
-    @DataProvider(name = "parallelSearchData", parallel = true)
+    @DataProvider(name = "parallelSearchData", parallel = false)
     public static Object[][] getParallelSearchData() {
         return new Object[][]{
             {ProductDataFactory.getRandomValidSearchTerm(), "Parallel search test 1"},

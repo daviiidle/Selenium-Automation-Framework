@@ -235,7 +235,7 @@ public class CheckoutDataProvider {
     /**
      * Provides parallel checkout test data for performance testing
      */
-    @DataProvider(name = "parallelCheckoutData", parallel = true)
+    @DataProvider(name = "parallelCheckoutData", parallel = false)
     public static Object[][] getParallelCheckoutData() {
         Object[][] data = new Object[5][];
         for (int i = 0; i < 5; i++) {

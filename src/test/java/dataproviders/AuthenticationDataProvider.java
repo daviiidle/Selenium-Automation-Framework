@@ -154,7 +154,7 @@ public class AuthenticationDataProvider {
     /**
      * Provides multiple user data sets for parallel testing
      */
-    @DataProvider(name = "parallelUserData", parallel = true)
+    @DataProvider(name = "parallelUserData", parallel = false)
     public static Object[][] getParallelUserData() {
         Object[][] userData = new Object[10][];
         for (int i = 0; i < 10; i++) {
