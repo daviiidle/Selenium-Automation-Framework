@@ -469,7 +469,7 @@ public class CheckoutTests extends BaseTest {
      */
     @Test(groups = {"functional", "checkout", "medium-priority"},
           priority = 4,
-          dataProvider = "paymentMethodData",
+          dataProvider = "paymentMethods",
           dataProviderClass = CheckoutDataProvider.class,
           description = "Different payment methods should work correctly")
     public void testMultiplePaymentMethods(String paymentMethod, String description) {

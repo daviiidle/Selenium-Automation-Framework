@@ -21,78 +21,67 @@ public abstract class BaseTest {
     protected ConfigurationManager config;
     protected HomePage homePage;
 
-    @BeforeMethod
+    @BeforeMethod(timeOut = 120000) // 2 minute timeout for CI
     public void setUp(Method method) {
         logger.info("Starting test: {}.{}", this.getClass().getSimpleName(), method.getName());
 
-        int retryCount = 0;
-        int maxRetries = 3;
-        Exception lastException = null;
+        try {
+            config = ConfigurationManager.getInstance();
+            String browserName = config.getBrowser();
+            logger.info("Using browser: {} in headless mode: {}", browserName, config.isHeadless());
 
-        while (retryCount < maxRetries) {
-            try {
-                config = ConfigurationManager.getInstance();
-                String browserName = config.getBrowser();
-                logger.info("Using browser: {} in headless mode: {} (attempt {})", browserName, config.isHeadless(), retryCount + 1);
+            BrowserType browserType = BrowserType.fromString(browserName);
+            driver = WebDriverFactory.createDriver(browserType);
 
-                BrowserType browserType = BrowserType.fromString(browserName);
-                driver = WebDriverFactory.createDriver(browserType);
-
-                if (driver == null) {
-                    throw new RuntimeException("WebDriver initialization failed - driver is null");
-                }
-                logger.info("WebDriver initialized successfully");
-
-                homePage = new HomePage(driver);
-                logger.info("HomePage object created");
-
-                // Add retry for navigation as well
-                try {
-                    homePage.navigateToHomePage();
-                    logger.info("Navigated to homepage successfully");
-                } catch (Exception navException) {
-                    logger.warn("Navigation failed on attempt {}: {}", retryCount + 1, navException.getMessage());
-                    if (retryCount == maxRetries - 1) {
-                        throw navException;
-                    }
-                    // Clean up and retry
-                    if (driver != null) {
-                        try { driver.quit(); } catch (Exception ignored) {}
-                    }
-                    Thread.sleep(2000); // Wait before retry
-                    retryCount++;
-                    continue;
-                }
-
-                // Call additional setup hook for test classes
-                additionalSetup();
-
-                logger.info("Test setup completed for: {}", method.getName());
-                return; // Success, exit retry loop
-
-            } catch (Exception e) {
-                lastException = e;
-                logger.warn("Test setup failed on attempt {} for: {} - {}", retryCount + 1, method.getName(), e.getMessage());
-
-                // Clean up driver before retry
-                if (driver != null) {
-                    try { WebDriverFactory.quitDriver(); } catch (Exception ignored) {}
-                    driver = null;
-                }
-
-                retryCount++;
-
-                if (retryCount < maxRetries) {
-                    try {
-                        Thread.sleep(3000); // Wait between retries
-                    } catch (InterruptedException ignored) {}
-                }
+            if (driver == null) {
+                throw new RuntimeException("WebDriver initialization failed - driver is null");
             }
-        }
+            logger.info("WebDriver initialized successfully");
 
-        // If all retries failed, throw the last exception
-        logger.error("Test setup failed after {} attempts for: {}", maxRetries, method.getName(), lastException);
-        throw new RuntimeException("Test setup failed after " + maxRetries + " attempts", lastException);
+            // Ensure Selenide WebDriver is bound for this thread
+            com.codeborne.selenide.WebDriverRunner.setWebDriver(driver);
+
+            homePage = new HomePage(driver);
+            logger.info("HomePage object created");
+
+            // Navigate with explicit timeout
+            try {
+                homePage.navigateToHomePage();
+
+                // Wait for page to be fully loaded
+                int maxWait = 10;
+                int waited = 0;
+                while (!homePage.isPageLoaded() && waited < maxWait) {
+                    Thread.sleep(1000);
+                    waited++;
+                }
+
+                if (!homePage.isPageLoaded()) {
+                    logger.warn("Homepage may not be fully loaded after {}s", maxWait);
+                }
+
+                logger.info("Navigated to homepage successfully");
+            } catch (Exception navException) {
+                logger.error("Navigation failed: {}", navException.getMessage());
+                throw new RuntimeException("Failed to navigate to homepage", navException);
+            }
+
+            // Call additional setup hook for test classes
+            additionalSetup();
+
+            logger.info("Test setup completed for: {}", method.getName());
+
+        } catch (Exception e) {
+            logger.error("Test setup failed for: {} - {}", method.getName(), e.getMessage());
+
+            // Clean up driver on failure
+            if (driver != null) {
+                try { WebDriverFactory.quitDriver(); } catch (Exception ignored) {}
+                driver = null;
+            }
+
+            throw new RuntimeException("Test setup failed: " + e.getMessage(), e);
+        }
     }
 
     @AfterMethod

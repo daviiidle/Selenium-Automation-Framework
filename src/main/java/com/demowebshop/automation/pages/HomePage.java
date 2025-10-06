@@ -65,98 +65,19 @@ public class HomePage extends BasePage {
      */
     public LoginPage clickLoginLink() {
         try {
-            // Enhanced login link clicking with multiple strategies
-            String[] loginSelectors = {
-                "a[href='/login']",
-                "a[href*='login']",
-                ".header-links a[href*='login']",
-                "a:contains('Log in')",
-                "a:contains('Login')",
-                "//a[contains(@href, 'login')]",
-                "//a[contains(text(), 'Log in')]",
-                "//a[contains(text(), 'LOGIN')]",
-                "//a[text()='Log in']",
-                "//a[normalize-space(text())='Log in']"
-            };
+            By loginSelector = By.cssSelector("a[href='/login']");
 
-            Exception lastException = null;
-
-            for (String selector : loginSelectors) {
-                try {
-                    By loginBy;
-                    if (selector.startsWith("//")) {
-                        loginBy = By.xpath(selector);
-                    } else {
-                        loginBy = By.cssSelector(selector);
-                    }
-
-                    // Check if element exists with short timeout
-                    if (waitUtils.softWaitForElementToBeVisible(loginBy, 3) != null) {
-                        boolean clickSuccessful = false;
-
-                        // Method 1: Standard click
-                        try {
-                            elementUtils.clickElement(loginBy);
-                            clickSuccessful = true;
-                        } catch (Exception e) {
-                            logger.debug("Standard click failed for login selector {}: {}", selector, e.getMessage());
-                        }
-
-                        // Method 2: Direct WebElement click
-                        if (!clickSuccessful) {
-                            try {
-                                findElement(loginBy).click();
-                                clickSuccessful = true;
-                            } catch (Exception e) {
-                                logger.debug("Direct click failed for login selector {}: {}", selector, e.getMessage());
-                            }
-                        }
-
-                        // Method 3: JavaScript click
-                        if (!clickSuccessful) {
-                            try {
-                                ((org.openqa.selenium.JavascriptExecutor) driver)
-                                    .executeScript("arguments[0].click();", findElement(loginBy));
-                                clickSuccessful = true;
-                            } catch (Exception e) {
-                                logger.debug("JavaScript click failed for login selector {}: {}", selector, e.getMessage());
-                            }
-                        }
-
-                        if (clickSuccessful) {
-                            logger.info("Successfully clicked login link using selector: {}", selector);
-
-                            // Wait for page navigation
-                            Thread.sleep(1000);
-                            waitForPageToLoad();
-
-                            // Verify we navigated to login page
-                            String currentUrl = getCurrentUrl();
-                            if (currentUrl.contains("login")) {
-                                logger.info("Successfully navigated to login page");
-                                return new LoginPage(driver);
-                            } else {
-                                logger.warn("Click successful but didn't navigate to login page. URL: {}", currentUrl);
-                                // Continue to try other selectors
-                            }
-                        }
-                    }
-                } catch (Exception e) {
-                    logger.debug("Login attempt failed with selector {}: {}", selector, e.getMessage());
-                    lastException = e;
-                }
+            // Wait for element and click
+            if (waitUtils.waitForElementToBeClickable(loginSelector, 10) != null) {
+                click(loginSelector);
+                logger.info("Clicked login link");
+                waitForPageToLoad();
+                return new LoginPage(driver);
             }
 
-            // If all attempts failed
-            logger.error("Failed to click login link after all attempts");
-            if (lastException != null) {
-                throw new RuntimeException("Login link not found or clickable", lastException);
-            } else {
-                throw new RuntimeException("Login link not found or clickable");
-            }
-
+            throw new RuntimeException("Login link not found or clickable");
         } catch (Exception e) {
-            logger.error("Failed to click login link after all attempts: {}", e.getMessage());
+            logger.error("Failed to click login link: {}", e.getMessage());
             throw new RuntimeException("Login link not found or clickable", e);
         }
     }
