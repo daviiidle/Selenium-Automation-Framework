@@ -17,21 +17,24 @@ import java.lang.reflect.Method;
 
 public abstract class BaseTest {
     protected final Logger logger = LogManager.getLogger(this.getClass());
-    protected WebDriver driver;
     protected ConfigurationManager config;
-    protected HomePage homePage;
+    private static final ThreadLocal<WebDriver> DRIVER = new ThreadLocal<>();
+    private static final ThreadLocal<HomePage> HOME_PAGE = new ThreadLocal<>();
 
     @BeforeMethod(timeOut = 120000) // 2 minute timeout for CI
     public void setUp(Method method) {
         logger.info("Starting test: {}.{}", this.getClass().getSimpleName(), method.getName());
 
         try {
+            tearDownThreadState(); // ensure no stale state on reused threads
+
             config = ConfigurationManager.getInstance();
             String browserName = config.getBrowser();
             logger.info("Using browser: {} in headless mode: {}", browserName, config.isHeadless());
 
             BrowserType browserType = BrowserType.fromString(browserName);
-            driver = WebDriverFactory.createDriver(browserType);
+            WebDriver driver = WebDriverFactory.createDriver(browserType);
+            DRIVER.set(driver);
 
             if (driver == null) {
                 throw new RuntimeException("WebDriver initialization failed - driver is null");
@@ -41,7 +44,8 @@ public abstract class BaseTest {
             // Ensure Selenide WebDriver is bound for this thread
             com.codeborne.selenide.WebDriverRunner.setWebDriver(driver);
 
-            homePage = new HomePage(driver);
+            HomePage homePage = new HomePage(driver);
+            HOME_PAGE.set(homePage);
             logger.info("HomePage object created");
 
             // Navigate with explicit timeout
@@ -75,10 +79,8 @@ public abstract class BaseTest {
             logger.error("Test setup failed for: {} - {}", method.getName(), e.getMessage());
 
             // Clean up driver on failure
-            if (driver != null) {
-                try { WebDriverFactory.quitDriver(); } catch (Exception ignored) {}
-                driver = null;
-            }
+            safeQuitDriver();
+            tearDownThreadState();
 
             throw new RuntimeException("Test setup failed: " + e.getMessage(), e);
         }
@@ -92,6 +94,7 @@ public abstract class BaseTest {
             // Call additional teardown hook for test classes
             additionalTeardown();
 
+            WebDriver driver = DRIVER.get();
             if (driver != null) {
                 try {
                     // Take screenshot on failure - check if driver is still valid
@@ -108,13 +111,11 @@ public abstract class BaseTest {
         } finally {
             // Safe driver cleanup
             try {
-                if (driver != null) {
-                    WebDriverFactory.quitDriver();
-                }
+                safeQuitDriver();
             } catch (Exception driverException) {
                 logger.warn("Error closing driver: {}", driverException.getMessage());
             }
-            driver = null; // Ensure driver reference is cleared
+            tearDownThreadState();
             logger.info("Test cleanup completed for: {}", method.getName());
         }
     }
@@ -125,6 +126,7 @@ public abstract class BaseTest {
      */
     private boolean isDriverValid() {
         try {
+            WebDriver driver = DRIVER.get();
             if (driver == null) {
                 return false;
             }
@@ -172,11 +174,14 @@ public abstract class BaseTest {
 
     // Utility methods for derived test classes
     protected void navigateToHomePage() {
-        homePage.navigateToHomePage();
+        getHomePage().navigateToHomePage();
     }
 
     protected void takeScreenshot(String testName) {
-        ScreenshotUtils.takeScreenshot(driver, testName);
+        WebDriver driver = DRIVER.get();
+        if (driver != null) {
+            ScreenshotUtils.takeScreenshot(driver, testName);
+        }
     }
 
     // Method to check if test passed (to be overridden by test listeners)
@@ -214,7 +219,7 @@ public abstract class BaseTest {
     protected void navigateToPath(String path) {
         String fullUrl = getBaseUrl() + path;
         logger.info("Navigating to: {}", fullUrl);
-        driver.get(fullUrl);
+        getDriver().get(fullUrl);
     }
 
     /**
@@ -223,7 +228,7 @@ public abstract class BaseTest {
      * @return true if URL contains expected path
      */
     protected boolean isOnPage(String expectedPath) {
-        String currentUrl = driver.getCurrentUrl();
+        String currentUrl = getDriver().getCurrentUrl();
         boolean isOnPage = currentUrl.contains(expectedPath);
         logger.debug("Current URL: {}, Expected path: {}, IsOnPage: {}", currentUrl, expectedPath, isOnPage);
         return isOnPage;
@@ -245,6 +250,47 @@ public abstract class BaseTest {
     protected void additionalTeardown() {
         // Override in test classes if additional teardown is needed
         logger.debug("Running additionalTeardown hook");
+    }
+
+    protected WebDriver getDriver() {
+        WebDriver driver = DRIVER.get();
+        if (driver == null) {
+            throw new IllegalStateException("WebDriver not initialized for current thread");
+        }
+        return driver;
+    }
+
+    protected HomePage getHomePage() {
+        HomePage page = HOME_PAGE.get();
+        if (page == null) {
+            page = new HomePage(getDriver());
+            HOME_PAGE.set(page);
+        }
+        return page;
+    }
+
+    protected void setHomePage(HomePage homePage) {
+        HOME_PAGE.set(homePage);
+    }
+
+    protected HomePage peekHomePage() {
+        return HOME_PAGE.get();
+    }
+
+    private void safeQuitDriver() {
+        WebDriver driver = DRIVER.get();
+        if (driver != null) {
+            try {
+                WebDriverFactory.quitDriver();
+            } catch (Exception e) {
+                logger.warn("Error quitting driver: {}", e.getMessage());
+            }
+        }
+    }
+
+    private void tearDownThreadState() {
+        DRIVER.remove();
+        HOME_PAGE.remove();
     }
 
 }

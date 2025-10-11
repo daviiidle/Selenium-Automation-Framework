@@ -18,12 +18,11 @@ import org.testng.Assert;
  */
 public class RegistrationTests extends BaseTest {
     private DemoWebShopAssertions assertions;
-    private HomePage homePage;
 
     @Override
     protected void additionalSetup() {
-        assertions = new DemoWebShopAssertions(driver);
-        homePage = new HomePage(driver);
+        assertions = new DemoWebShopAssertions(getDriver());
+        setHomePage(new HomePage(getDriver()));
     }
 
     /**
@@ -37,6 +36,7 @@ public class RegistrationTests extends BaseTest {
     public void testValidUserRegistration() {
         User newUser = UserDataFactory.createRandomUser();
 
+        HomePage homePage = getHomePage();
         RegisterPage registerPage = homePage.clickRegisterLink();
         Assert.assertTrue(registerPage.isPageLoaded(), "Register page should be loaded");
 
@@ -63,6 +63,7 @@ public class RegistrationTests extends BaseTest {
         User newUser = UserDataFactory.createRandomUser();
         String invalidEmail = UserDataFactory.generateInvalidEmail();
 
+        HomePage homePage = getHomePage();
         RegisterPage registerPage = homePage.clickRegisterLink();
         Assert.assertTrue(registerPage.isPageLoaded(), "Register page should be loaded");
 
@@ -85,6 +86,7 @@ public class RegistrationTests extends BaseTest {
     public void testRegistrationWithMismatchedPasswords() {
         User newUser = UserDataFactory.createRandomUser();
 
+        HomePage homePage = getHomePage();
         RegisterPage registerPage = homePage.clickRegisterLink();
         Assert.assertTrue(registerPage.isPageLoaded(), "Register page should be loaded");
 
@@ -108,6 +110,7 @@ public class RegistrationTests extends BaseTest {
         User newUser = UserDataFactory.createRandomUser();
         String weakPassword = UserDataFactory.generateWeakPassword();
 
+        HomePage homePage = getHomePage();
         RegisterPage registerPage = homePage.clickRegisterLink();
         Assert.assertTrue(registerPage.isPageLoaded(), "Register page should be loaded");
 
@@ -128,6 +131,7 @@ public class RegistrationTests extends BaseTest {
     public void testRegistrationWithAllOptionalFields() {
         User newUser = UserDataFactory.createRandomUser();
 
+        HomePage homePage = getHomePage();
         RegisterPage registerPage = homePage.clickRegisterLink();
         Assert.assertTrue(registerPage.isPageLoaded(), "Register page should be loaded");
 
@@ -158,6 +162,7 @@ public class RegistrationTests extends BaseTest {
     public void testMultipleUserRegistration(User user, String testDescription) {
         logger.info("=== Starting REG_006: {} ===", testDescription);
 
+        HomePage homePage = getHomePage();
         RegisterPage registerPage = homePage.clickRegisterLink();
         assertions.assertPageUrl("register", "Should navigate to registration page");
 
@@ -197,6 +202,7 @@ public class RegistrationTests extends BaseTest {
         User testUser = UserDataFactory.createRandomUser();
         testUser.setEmail(email);
 
+        HomePage homePage = getHomePage();
         RegisterPage registerPage = homePage.clickRegisterLink();
         assertions.assertPageUrl("register", "Should navigate to registration page");
 
@@ -232,6 +238,7 @@ public class RegistrationTests extends BaseTest {
     public void testRegistrationPageElements() {
         logger.info("=== Starting REG_008: Registration Page Elements Validation ===");
 
+        HomePage homePage = getHomePage();
         RegisterPage registerPage = homePage.clickRegisterLink();
         assertions.assertPageUrl("register", "Should navigate to registration page");
 
@@ -263,6 +270,7 @@ public class RegistrationTests extends BaseTest {
     @Override
     protected void additionalTeardown() {
         // Additional cleanup if needed
+        HomePage homePage = peekHomePage();
         if (homePage != null && homePage.isUserLoggedIn()) {
             logger.info("Logging out user after test completion");
             homePage.clickLogoutLink();

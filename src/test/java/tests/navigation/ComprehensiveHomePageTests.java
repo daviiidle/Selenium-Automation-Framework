@@ -6,6 +6,7 @@ import com.demowebshop.automation.pages.ProductCatalogPage;
 import com.demowebshop.automation.pages.ProductDetailsPage;
 import dataproviders.ProductDataProvider;
 import utils.DemoWebShopAssertions;
+import org.openqa.selenium.WebDriver;
 import org.testng.annotations.Test;
 import org.testng.asserts.SoftAssert;
 
@@ -18,12 +19,19 @@ import java.util.List;
  */
 public class ComprehensiveHomePageTests extends BaseTest {
     private DemoWebShopAssertions assertions;
-    private HomePage homePage;
 
     @Override
     protected void additionalSetup() {
-        assertions = new DemoWebShopAssertions(driver);
-        homePage = new HomePage(driver);
+        assertions = new DemoWebShopAssertions(getDriver());
+        setHomePage(new HomePage(getDriver()));
+    }
+
+    private HomePage home() {
+        return getHomePage();
+    }
+
+    private WebDriver driver() {
+        return getDriver();
     }
 
     /**
@@ -37,6 +45,7 @@ public class ComprehensiveHomePageTests extends BaseTest {
     public void testHomepageLoadAndBasicElements() {
         logger.info("=== Starting HOME_001: Homepage Load and Basic Elements ===");
 
+        HomePage homePage = home();
         // Verify homepage is loaded
         SoftAssert softAssert = assertions.getSoftAssert();
         softAssert.assertTrue(homePage.isPageLoaded(),
@@ -80,6 +89,7 @@ public class ComprehensiveHomePageTests extends BaseTest {
     public void testFeaturedProductsDisplay() {
         logger.info("=== Starting HOME_002: Featured Products Display ===");
 
+        HomePage homePage = home();
         SoftAssert softAssert = assertions.getSoftAssert();
 
         // Verify featured products section exists
@@ -136,6 +146,7 @@ public class ComprehensiveHomePageTests extends BaseTest {
     public void testMainNavigationCategories(String categoryName) {
         logger.info("=== Starting HOME_003: Main Navigation - {} ===", categoryName);
 
+        HomePage homePage = home();
         if (homePage.isCategoryLinkDisplayed(categoryName)) {
             ProductCatalogPage catalogPage = homePage.navigateToCategory(categoryName);
             assertions.assertCategoryPageLoaded(catalogPage, categoryName);
@@ -163,6 +174,7 @@ public class ComprehensiveHomePageTests extends BaseTest {
         logger.info("=== Starting HOME_004: Search Functionality from Homepage ===");
 
         String searchTerm = "computer";
+        HomePage homePage = home();
         SoftAssert softAssert = assertions.getSoftAssert();
 
         // Verify search box functionality
@@ -180,7 +192,7 @@ public class ComprehensiveHomePageTests extends BaseTest {
         // Execute search
         homePage.clickSearchButton();
         // DemoWebShop search may redirect to different URL patterns (search, catalog, etc.)
-        String currentUrl = driver.getCurrentUrl().toLowerCase();
+        String currentUrl = driver().getCurrentUrl().toLowerCase();
         softAssert.assertTrue(currentUrl.contains("search") || currentUrl.contains("catalog") || currentUrl.contains("products") || !currentUrl.equals("https://demowebshop.tricentis.com/"),
                              "Should navigate away from homepage after search. Current URL: " + currentUrl);
 
@@ -202,6 +214,7 @@ public class ComprehensiveHomePageTests extends BaseTest {
     public void testShoppingCartAccessFromHomepage() {
         logger.info("=== Starting HOME_005: Shopping Cart Access from Homepage ===");
 
+        HomePage homePage = home();
         SoftAssert softAssert = assertions.getSoftAssert();
 
         // Verify shopping cart link
@@ -250,6 +263,7 @@ public class ComprehensiveHomePageTests extends BaseTest {
     public void testFooterLinksAndInformation() {
         logger.info("=== Starting HOME_006: Footer Links and Information ===");
 
+        HomePage homePage = home();
         SoftAssert softAssert = assertions.getSoftAssert();
 
         // Scroll to footer to ensure it's visible
@@ -297,6 +311,7 @@ public class ComprehensiveHomePageTests extends BaseTest {
     public void testHomepagePerformance() {
         logger.info("=== Starting HOME_007: Homepage Performance ===");
 
+        HomePage homePage = home();
         // Record start time
         long startTime = System.currentTimeMillis();
 
@@ -339,8 +354,10 @@ public class ComprehensiveHomePageTests extends BaseTest {
     public void testMobileResponsiveHomepage() {
         logger.info("=== Starting HOME_008: Mobile Responsive Homepage ===");
 
+        HomePage homePage = home();
+        WebDriver webDriver = driver();
         // Set mobile viewport
-        driver.manage().window().setSize(new org.openqa.selenium.Dimension(375, 667));
+        webDriver.manage().window().setSize(new org.openqa.selenium.Dimension(375, 667));
 
         // Refresh page to apply mobile layout
         homePage.refreshCurrentPage();
@@ -379,7 +396,7 @@ public class ComprehensiveHomePageTests extends BaseTest {
         }
 
         // Restore desktop viewport
-        driver.manage().window().maximize();
+        webDriver.manage().window().maximize();
 
         assertions.assertAll();
         logger.info("=== HOME_008 completed: Mobile responsive testing ===");
@@ -396,10 +413,12 @@ public class ComprehensiveHomePageTests extends BaseTest {
     public void testHomepageSEOElements() {
         logger.info("=== Starting HOME_009: Homepage SEO Elements ===");
 
+        HomePage homePage = home();
+        WebDriver webDriver = driver();
         SoftAssert softAssert = assertions.getSoftAssert();
 
         // Verify page title
-        String pageTitle = driver.getTitle();
+        String pageTitle = webDriver.getTitle();
         softAssert.assertFalse(pageTitle.trim().isEmpty(),
                               "Page title should not be empty");
         softAssert.assertTrue(pageTitle.length() >= 10 && pageTitle.length() <= 60,
@@ -449,6 +468,7 @@ public class ComprehensiveHomePageTests extends BaseTest {
     public void testHomepageAccessibility() {
         logger.info("=== Starting HOME_010: Homepage Accessibility ===");
 
+        HomePage homePage = home();
         SoftAssert softAssert = assertions.getSoftAssert();
 
         // Test keyboard navigation
@@ -490,9 +510,17 @@ public class ComprehensiveHomePageTests extends BaseTest {
     @Override
     protected void additionalTeardown() {
         // Ensure we're back to desktop viewport
-        driver.manage().window().maximize();
+        try {
+            WebDriver driver = getDriver();
+            driver.manage().window().maximize();
+        } catch (IllegalStateException ignored) {
+            // Driver already cleaned up
+        }
         // Navigate to homepage for next test
-        homePage.navigateToHomePage();
+        HomePage homePage = peekHomePage();
+        if (homePage != null) {
+            homePage.navigateToHomePage();
+        }
         logger.debug("Homepage test cleanup completed");
     }
 }

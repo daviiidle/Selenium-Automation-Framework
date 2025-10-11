@@ -18,12 +18,11 @@ import java.util.List;
  */
 public class ProductSearchTests extends BaseTest {
     private DemoWebShopAssertions assertions;
-    private HomePage homePage;
 
     @Override
     protected void additionalSetup() {
-        assertions = new DemoWebShopAssertions(driver);
-        homePage = new HomePage(driver);
+        assertions = new DemoWebShopAssertions(getDriver());
+        setHomePage(new HomePage(getDriver()));
     }
 
     /**
@@ -39,6 +38,7 @@ public class ProductSearchTests extends BaseTest {
     public void testValidProductSearch(String searchTerm, String description) {
         logger.info("=== Starting SEARCH_001: Valid Search - {} ===", searchTerm);
 
+        HomePage homePage = getHomePage();
         ProductSearchPage searchPage = homePage.performSearch(searchTerm);
         assertions.assertPageUrl("search", "Should navigate to search results page");
 
@@ -81,6 +81,7 @@ public class ProductSearchTests extends BaseTest {
     public void testInvalidProductSearch(String searchTerm, String description) {
         logger.info("=== Starting SEARCH_002: Invalid Search - {} ===", description);
 
+        HomePage homePage = getHomePage();
         ProductSearchPage searchPage = homePage.performSearch(searchTerm);
         assertions.assertPageUrl("search", "Should navigate to search results page");
 
@@ -104,6 +105,7 @@ public class ProductSearchTests extends BaseTest {
     public void testSearchEdgeCases(String searchTerm, String description) {
         logger.info("=== Starting SEARCH_003: Edge Case - {} ===", description);
 
+        HomePage homePage = getHomePage();
         ProductSearchPage searchPage = homePage.performSearch(searchTerm);
 
         // Verify search doesn't break and handles edge case gracefully
@@ -141,6 +143,7 @@ public class ProductSearchTests extends BaseTest {
 
         // Perform search that will return multiple results
         String searchTerm = ProductDataFactory.getRandomValidSearchTerm();
+        HomePage homePage = getHomePage();
         ProductSearchPage searchPage = homePage.performSearch(searchTerm);
 
         // Verify results are returned
@@ -181,6 +184,7 @@ public class ProductSearchTests extends BaseTest {
         // Record start time
         long startTime = System.currentTimeMillis();
 
+        HomePage homePage = getHomePage();
         ProductSearchPage searchPage = homePage.performSearch(searchTerm);
 
         // Record end time
@@ -204,6 +208,7 @@ public class ProductSearchTests extends BaseTest {
     @Override
     protected void additionalTeardown() {
         // Clear any search state if needed
+        HomePage homePage = peekHomePage();
         if (homePage != null) {
             homePage.clearSearchBox();
         }

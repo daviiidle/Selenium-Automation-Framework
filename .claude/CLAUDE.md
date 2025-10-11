@@ -8,6 +8,7 @@ MCP-first automation agent. Delegate all filesystem, execution, and inspection t
 **Maven Test Runner** - Test execution and analysis
 **Selenium Debug** - Selector validation, page inspection, test analysis, diagnostics, and code updates
 **Framework Navigator** - Navigation, search, and relationship mapping (80-97% token savings)
+**Memory Keeper** - Context persistence, session management, knowledge graphs, and cross-session state tracking
 
 ## Execution Principles
 

@@ -4,11 +4,13 @@ import base.BaseTest;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 import com.demowebshop.automation.pages.ProductCatalogPage;
+import com.demowebshop.automation.pages.HomePage;
 
 public class HomePageTests extends BaseTest {
 
     @Test(groups = {"smoke", "navigation"}, priority = 1)
     public void testHomePageLoad() {
+        HomePage homePage = getHomePage();
         Assert.assertTrue(homePage.isPageLoaded(), "Home page should be loaded successfully");
         Assert.assertFalse(homePage.getPageTitle().isEmpty(), "Page title should not be empty");
 
@@ -17,6 +19,7 @@ public class HomePageTests extends BaseTest {
 
     @Test(groups = {"ui", "navigation"}, priority = 2)
     public void testNavigationMenuElements() {
+        HomePage homePage = getHomePage();
         Assert.assertTrue(homePage.isPageLoaded(), "Home page should be loaded");
 
         Assert.assertTrue(homePage.isLoginLinkDisplayed(), "Login link should be displayed");
@@ -28,6 +31,7 @@ public class HomePageTests extends BaseTest {
 
     @Test(groups = {"functional", "navigation"}, priority = 3)
     public void testCategoryNavigation() {
+        HomePage homePage = getHomePage();
         Assert.assertTrue(homePage.isPageLoaded(), "Home page should be loaded");
 
         ProductCatalogPage booksPage = homePage.navigateToBooks();
@@ -43,6 +47,7 @@ public class HomePageTests extends BaseTest {
 
     @Test(groups = {"functional", "navigation"}, priority = 4)
     public void testFeaturedProducts() {
+        HomePage homePage = getHomePage();
         Assert.assertTrue(homePage.isPageLoaded(), "Home page should be loaded");
 
         int featuredProductsCount = homePage.getFeaturedProductsCount();
@@ -53,6 +58,7 @@ public class HomePageTests extends BaseTest {
 
     @Test(groups = {"ui", "navigation"}, priority = 5)
     public void testPageElements() {
+        HomePage homePage = getHomePage();
         Assert.assertTrue(homePage.isPageLoaded(), "Home page should be loaded");
 
         // Test various page elements

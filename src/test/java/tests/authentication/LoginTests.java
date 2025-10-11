@@ -17,6 +17,7 @@ public class LoginTests extends BaseTest {
     public void testValidLogin() {
         User testUser = UserDataFactory.createTestUser();
 
+        HomePage homePage = getHomePage();
         LoginPage loginPage = homePage.clickLoginLink();
         Assert.assertTrue(loginPage.isPageLoaded(), "Login page should be loaded");
 
@@ -34,6 +35,7 @@ public class LoginTests extends BaseTest {
 
     @Test(groups = {"negative", "authentication"}, priority = 2)
     public void testInvalidEmailLogin() {
+        HomePage homePage = getHomePage();
         LoginPage loginPage = homePage.clickLoginLink();
         Assert.assertTrue(loginPage.isPageLoaded(), "Login page should be loaded");
 
@@ -55,6 +57,7 @@ public class LoginTests extends BaseTest {
 
     @Test(groups = {"negative", "authentication"}, priority = 3)
     public void testEmptyCredentialsLogin() {
+        HomePage homePage = getHomePage();
         LoginPage loginPage = homePage.clickLoginLink();
         Assert.assertTrue(loginPage.isPageLoaded(), "Login page should be loaded");
 
@@ -70,6 +73,7 @@ public class LoginTests extends BaseTest {
 
     @Test(groups = {"functional", "authentication"}, priority = 4)
     public void testRememberMeFunctionality() {
+        HomePage homePage = getHomePage();
         LoginPage loginPage = homePage.clickLoginLink();
         Assert.assertTrue(loginPage.isPageLoaded(), "Login page should be loaded");
 
@@ -86,6 +90,7 @@ public class LoginTests extends BaseTest {
 
     @Test(groups = {"ui", "authentication"}, priority = 5)
     public void testLoginPageElements() {
+        HomePage homePage = getHomePage();
         LoginPage loginPage = homePage.clickLoginLink();
         Assert.assertTrue(loginPage.isPageLoaded(), "Login page should be loaded");
 
@@ -104,6 +109,7 @@ public class LoginTests extends BaseTest {
     public void testValidLoginSelenide() {
         User testUser = UserDataFactory.createTestUser();
 
+        HomePage homePage = getHomePage();
         LoginPage loginPage = homePage.clickLoginLinkSelenide();
         Assert.assertTrue(loginPage.isPageLoaded(), "Login page should be loaded");
 
@@ -121,6 +127,7 @@ public class LoginTests extends BaseTest {
 
     @Test(groups = {"negative", "authentication", "selenide"}, priority = 7)
     public void testInvalidEmailLoginSelenide() {
+        HomePage homePage = getHomePage();
         LoginPage loginPage = homePage.clickLoginLinkSelenide();
         Assert.assertTrue(loginPage.isPageLoaded(), "Login page should be loaded");
 
@@ -144,6 +151,7 @@ public class LoginTests extends BaseTest {
 
     @Test(groups = {"functional", "authentication", "selenide"}, priority = 8)
     public void testFormValidationSelenide() {
+        HomePage homePage = getHomePage();
         LoginPage loginPage = homePage.clickLoginLinkSelenide();
         Assert.assertTrue(loginPage.isPageLoaded(), "Login page should be loaded");
 
@@ -163,6 +171,7 @@ public class LoginTests extends BaseTest {
 
     @Test(groups = {"ui", "authentication", "selenide"}, priority = 9)
     public void testSelenideDirectElementAccess() {
+        HomePage homePage = getHomePage();
         LoginPage loginPage = homePage.clickLoginLinkSelenide();
 
         // Direct Selenide element verification
@@ -184,6 +193,7 @@ public class LoginTests extends BaseTest {
     @Test(groups = {"hybrid", "authentication"}, priority = 10)
     public void testHybridSeleniumSelenideApproach() {
         // Use traditional Selenium approach
+        HomePage homePage = getHomePage();
         LoginPage loginPage = homePage.clickLoginLink();
         Assert.assertTrue(loginPage.isPageLoaded(), "Login page should be loaded");
 

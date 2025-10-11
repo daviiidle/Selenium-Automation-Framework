@@ -9,6 +9,7 @@ import utils.DemoWebShopAssertions;
 import org.testng.annotations.Test;
 import org.testng.asserts.SoftAssert;
 import org.testng.Assert;
+import org.openqa.selenium.WebDriver;
 
 /**
  * Comprehensive Shopping Cart Test Suite
@@ -17,12 +18,11 @@ import org.testng.Assert;
  */
 public class ShoppingCartTests extends BaseTest {
     private DemoWebShopAssertions assertions;
-    private HomePage homePage;
 
     @Override
     protected void additionalSetup() {
-        assertions = new DemoWebShopAssertions(driver);
-        homePage = new HomePage(driver);
+        assertions = new DemoWebShopAssertions(getDriver());
+        setHomePage(new HomePage(getDriver()));
     }
 
     /**
@@ -36,6 +36,7 @@ public class ShoppingCartTests extends BaseTest {
     public void testAddItemsToCart() {
         logger.info("=== Starting CART_001: Add Items to Cart ===");
 
+        HomePage homePage = getHomePage();
         // Navigate to a product and add to cart
         ProductDetailsPage productPage = homePage.navigateToRandomProduct();
         Assert.assertTrue(productPage.isPageLoaded(), "Product page should be loaded");
@@ -65,7 +66,9 @@ public class ShoppingCartTests extends BaseTest {
                                "Product quantity should match selected quantity");
 
         // Add another different product to cart
-        homePage = cartPage.clickContinueShopping();
+        HomePage continuedShopping = cartPage.clickContinueShopping();
+        setHomePage(continuedShopping);
+        homePage = continuedShopping;
         ProductDetailsPage secondProduct = homePage.navigateToRandomProduct();
         String secondProductTitle = secondProduct.getProductTitle();
 
@@ -97,13 +100,17 @@ public class ShoppingCartTests extends BaseTest {
     public void testUpdateCartItems() {
         logger.info("=== Starting CART_002: Update Cart Items ===");
 
+        HomePage homePage = getHomePage();
+        WebDriver driver = getDriver();
         // Navigate to cart (assuming items are already present)
         ShoppingCartPage cartPage = homePage.clickShoppingCartLink();
         Assert.assertTrue(cartPage.isPageLoaded(), "Shopping cart page should be loaded");
 
         if (!cartPage.hasItems()) {
             // Add an item first if cart is empty
-            homePage = cartPage.clickContinueShopping();
+            HomePage continuedShopping = cartPage.clickContinueShopping();
+            setHomePage(continuedShopping);
+            homePage = continuedShopping;
             ProductDetailsPage productPage = homePage.navigateToRandomProduct();
             productPage.clickAddToCart();
             cartPage = homePage.clickShoppingCartLink();
@@ -190,6 +197,7 @@ public class ShoppingCartTests extends BaseTest {
     public void testCartCalculations() {
         logger.info("=== Starting CART_003: Cart Calculations Validation ===");
 
+        HomePage homePage = getHomePage();
         // Add known items to cart for calculation testing
         ProductDetailsPage productPage = homePage.navigateToRandomProduct();
         String productTitle = productPage.getProductTitle();
@@ -245,13 +253,18 @@ public class ShoppingCartTests extends BaseTest {
     public void testCartPersistence() {
         logger.info("=== Starting CART_004: Cart Persistence ===");
 
+        HomePage homePage = getHomePage();
+        WebDriver driver = getDriver();
+
         // Add item to cart
         ProductDetailsPage productPage = homePage.navigateToRandomProduct();
         String productTitle = productPage.getProductTitle();
         productPage.clickAddToCart();
 
         // Navigate away from cart
-        homePage = productPage.clickHomeLink();
+        HomePage homeAfterProduct = productPage.clickHomeLink();
+        setHomePage(homeAfterProduct);
+        homePage = homeAfterProduct;
         int cartCount = homePage.getCartItemCount();
 
         // Navigate to different pages
@@ -287,6 +300,7 @@ public class ShoppingCartTests extends BaseTest {
     public void testCartErrorHandling() {
         logger.info("=== Starting CART_005: Cart Error Handling ===");
 
+        HomePage homePage = getHomePage();
         // Test adding invalid quantity
         ProductDetailsPage productPage = homePage.navigateToRandomProduct();
 
@@ -345,6 +359,7 @@ public class ShoppingCartTests extends BaseTest {
     protected void additionalTeardown() {
         // Clear cart after tests if needed
         try {
+            HomePage homePage = peekHomePage();
             if (homePage != null) {
                 ShoppingCartPage cartPage = homePage.clickShoppingCartLink();
                 if (cartPage.hasItems()) {

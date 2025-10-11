@@ -13,6 +13,7 @@ import utils.DemoWebShopAssertions;
 import org.testng.annotations.Test;
 import org.testng.asserts.SoftAssert;
 import org.testng.Assert;
+import org.openqa.selenium.WebDriver;
 
 /**
  * Comprehensive Checkout Process Test Suite
@@ -21,12 +22,19 @@ import org.testng.Assert;
  */
 public class CheckoutTests extends BaseTest {
     private DemoWebShopAssertions assertions;
-    private HomePage homePage;
 
     @Override
     protected void additionalSetup() {
-        assertions = new DemoWebShopAssertions(driver);
-        homePage = new HomePage(driver);
+        assertions = new DemoWebShopAssertions(getDriver());
+        setHomePage(new HomePage(getDriver()));
+    }
+
+    private HomePage home() {
+        return getHomePage();
+    }
+
+    private void updateHome(HomePage homePage) {
+        setHomePage(homePage);
     }
 
     /**
@@ -40,6 +48,9 @@ public class CheckoutTests extends BaseTest {
           description = "Guest checkout process should complete successfully end-to-end")
     public void testGuestCheckoutProcess() {
         logger.info("=== Starting CHECKOUT_001: Guest Checkout Process ===");
+
+        HomePage homePage = getHomePage();
+        WebDriver driver = getDriver();
 
         // Step 1: Add item to cart
         ProductDetailsPage productPage = homePage.navigateToRandomProduct();
@@ -82,7 +93,9 @@ public class CheckoutTests extends BaseTest {
             logger.error("Cart is empty after add-to-cart. Retrying add-to-cart...");
 
             // Retry: Go back and add again
-            homePage = cartPage.clickContinueShopping();
+            HomePage continuedShopping = cartPage.clickContinueShopping();
+            updateHome(continuedShopping);
+            homePage = continuedShopping;
             productPage = homePage.navigateToRandomProduct();
             productTitle = productPage.getProductTitle();
             productPrice = productPage.getProductPriceAsDouble();
@@ -237,6 +250,7 @@ public class CheckoutTests extends BaseTest {
                                           PaymentInfo paymentInfo, String testDescription) {
         logger.info("=== Starting CHECKOUT_002: {} ===", testDescription);
 
+        HomePage homePage = home();
         // Step 1: Register or login user
         User testUser = UserDataFactory.createRandomUser();
         testUser.setEmail(email);
@@ -269,6 +283,7 @@ public class CheckoutTests extends BaseTest {
                     // Wait for login to complete
                     if (loginResult instanceof HomePage) {
                         homePage = (HomePage) loginResult;
+                        updateHome(homePage);
 
                         // Wait for login to complete using Selenide sleep
                         com.codeborne.selenide.Selenide.sleep(2000);
@@ -288,6 +303,7 @@ public class CheckoutTests extends BaseTest {
             }
         } else {
             homePage = (HomePage) resultPage;
+            updateHome(homePage);
         }
 
         // Verify user is logged in
@@ -395,6 +411,7 @@ public class CheckoutTests extends BaseTest {
     public void testCheckoutFormValidation() {
         logger.info("=== Starting CHECKOUT_003: Checkout Form Validation ===");
 
+        HomePage homePage = home();
         // Add item to cart and navigate to checkout
         ProductDetailsPage productPage = homePage.navigateToRandomProduct();
         productPage.clickAddToCart();
@@ -475,6 +492,7 @@ public class CheckoutTests extends BaseTest {
     public void testMultiplePaymentMethods(String paymentMethod, String description) {
         logger.info("=== Starting CHECKOUT_004: {} ===", description);
 
+        HomePage homePage = home();
         // Setup checkout process
         ProductDetailsPage productPage = homePage.navigateToRandomProduct();
         productPage.clickAddToCart();
@@ -544,6 +562,7 @@ public class CheckoutTests extends BaseTest {
     public void testCheckoutPerformance() {
         logger.info("=== Starting CHECKOUT_005: Checkout Performance ===");
 
+        HomePage homePage = home();
         long totalStartTime = System.currentTimeMillis();
 
         // Add item to cart
@@ -598,6 +617,7 @@ public class CheckoutTests extends BaseTest {
     protected void additionalTeardown() {
         // Clear cart and logout user if needed
         try {
+            HomePage homePage = peekHomePage();
             if (homePage != null) {
                 if (homePage.isUserLoggedIn()) {
                     homePage.clickLogoutLink();

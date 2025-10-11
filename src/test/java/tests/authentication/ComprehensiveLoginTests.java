@@ -18,12 +18,11 @@ import org.testng.asserts.SoftAssert;
  */
 public class ComprehensiveLoginTests extends BaseTest {
     private DemoWebShopAssertions assertions;
-    private HomePage homePage;
 
     @Override
     protected void additionalSetup() {
-        assertions = new DemoWebShopAssertions(driver);
-        homePage = new HomePage(driver);
+        assertions = new DemoWebShopAssertions(getDriver());
+        setHomePage(new HomePage(getDriver()));
     }
 
     /**
@@ -39,6 +38,7 @@ public class ComprehensiveLoginTests extends BaseTest {
     public void testValidLogin(String email, String password, String description) {
         logger.info("=== Starting LOGIN_001: {} ===", description);
 
+        HomePage homePage = getHomePage();
         LoginPage loginPage = homePage.clickLoginLink();
         assertions.assertPageUrl("login", "Should navigate to login page");
 
@@ -49,9 +49,9 @@ public class ComprehensiveLoginTests extends BaseTest {
 
         // Check if login was successful by verifying the result page type
         if (resultPage instanceof HomePage) {
-            HomePage homePage = (HomePage) resultPage;
+            HomePage loggedInHome = (HomePage) resultPage;
             // Verify successful login
-            assertions.assertUserLoggedIn(homePage, email);
+            assertions.assertUserLoggedIn(loggedInHome, email);
         } else {
             // Login failed - likely still on login page with errors
             logger.warn("Login did not succeed - checking for validation errors");
@@ -64,8 +64,8 @@ public class ComprehensiveLoginTests extends BaseTest {
                 }
             }
             // For valid login test, we expect to succeed, so create HomePage and verify
-            HomePage homePage = new HomePage(driver);
-            assertions.assertUserLoggedIn(homePage, email);
+            HomePage refreshedHomePage = new HomePage(getDriver());
+            assertions.assertUserLoggedIn(refreshedHomePage, email);
         }
         assertions.assertPageUrl("/", "Should redirect to home page after successful login");
 
@@ -87,6 +87,7 @@ public class ComprehensiveLoginTests extends BaseTest {
         logger.info("=== Starting LOGIN_002: {} ===", scenario);
 
         try {
+            HomePage homePage = getHomePage();
             LoginPage loginPage = homePage.clickLoginLink();
             assertions.assertPageUrl("login", "Should navigate to login page");
 
@@ -117,6 +118,7 @@ public class ComprehensiveLoginTests extends BaseTest {
     public void testEmptyCredentialsLogin() {
         logger.info("=== Starting LOGIN_003: Empty Credentials Validation ===");
 
+        HomePage homePage = getHomePage();
         // Ensure logged out state before testing empty credentials
         if (homePage.isUserLoggedIn()) {
             homePage.clickLogoutLink();
@@ -149,6 +151,7 @@ public class ComprehensiveLoginTests extends BaseTest {
     public void testRememberMeFunctionality(String email, String password, boolean rememberMe, String description) {
         logger.info("=== Starting LOGIN_004: {} ===", description);
 
+        HomePage homePage = getHomePage();
         LoginPage loginPage = homePage.clickLoginLink();
         assertions.assertPageUrl("login", "Should navigate to login page");
 
@@ -165,8 +168,8 @@ public class ComprehensiveLoginTests extends BaseTest {
         BasePage resultPage = loginPage.clickLoginButton();
 
         // Verify login success (remember me persistence would need additional browser session testing)
-        HomePage homePage = (resultPage instanceof HomePage) ? (HomePage) resultPage : new HomePage(driver);
-        assertions.assertUserLoggedIn(homePage, email);
+        HomePage loggedInPage = (resultPage instanceof HomePage) ? (HomePage) resultPage : new HomePage(getDriver());
+        assertions.assertUserLoggedIn(loggedInPage, email);
 
         assertions.assertAll();
         logger.info("=== LOGIN_004 completed: {} ===", description);
@@ -182,6 +185,7 @@ public class ComprehensiveLoginTests extends BaseTest {
     public void testLoginPageElements() {
         logger.info("=== Starting LOGIN_005: Login Page Elements Validation ===");
 
+        HomePage homePage = getHomePage();
         LoginPage loginPage = homePage.clickLoginLink();
         assertions.assertPageUrl("login", "Should navigate to login page");
 
@@ -220,6 +224,8 @@ public class ComprehensiveLoginTests extends BaseTest {
     public void testLogoutFunctionality(String scenario, String email, String password) {
         logger.info("=== Starting LOGIN_006: {} ===", scenario);
 
+        HomePage homePage = getHomePage();
+
         // First login
         LoginPage loginPage = homePage.clickLoginLink();
         loginPage.enterEmail(email);
@@ -227,7 +233,7 @@ public class ComprehensiveLoginTests extends BaseTest {
         BasePage resultPage = loginPage.clickLoginButton();
 
         // Verify logged in state
-        HomePage loggedInPage = (resultPage instanceof HomePage) ? (HomePage) resultPage : new HomePage(driver);
+        HomePage loggedInPage = (resultPage instanceof HomePage) ? (HomePage) resultPage : new HomePage(getDriver());
         assertions.assertUserLoggedIn(loggedInPage, email);
 
         // Perform logout
@@ -251,6 +257,7 @@ public class ComprehensiveLoginTests extends BaseTest {
     public void testPasswordFieldSecurity() {
         logger.info("=== Starting LOGIN_007: Password Field Security ===");
 
+        HomePage homePage = getHomePage();
         LoginPage loginPage = homePage.clickLoginLink();
         assertions.assertPageUrl("login", "Should navigate to login page");
 
@@ -263,7 +270,7 @@ public class ComprehensiveLoginTests extends BaseTest {
                              "Password field should be masked for security");
 
         // Verify password value is not visible in page source (if possible)
-        String pageSource = driver.getPageSource();
+        String pageSource = getDriver().getPageSource();
         softAssert.assertFalse(pageSource.contains(testPassword),
                               "Password should not be visible in plain text in page source");
 
@@ -280,6 +287,8 @@ public class ComprehensiveLoginTests extends BaseTest {
           description = "Login navigation and redirections should work correctly")
     public void testLoginNavigation() {
         logger.info("=== Starting LOGIN_008: Login Navigation and Redirection ===");
+
+        HomePage homePage = getHomePage();
 
         // Test navigation to login page from home page
         LoginPage loginPage = homePage.clickLoginLink();
@@ -318,12 +327,13 @@ public class ComprehensiveLoginTests extends BaseTest {
 
         // Login first
         User testUser = UserDataFactory.createTestUser();
+        HomePage homePage = getHomePage();
         LoginPage loginPage = homePage.clickLoginLink();
         loginPage.enterEmail(testUser.getEmail());
         loginPage.enterPassword(testUser.getPassword());
         BasePage resultPage = loginPage.clickLoginButton();
 
-        HomePage loggedInPage = (resultPage instanceof HomePage) ? (HomePage) resultPage : new HomePage(driver);
+        HomePage loggedInPage = (resultPage instanceof HomePage) ? (HomePage) resultPage : new HomePage(getDriver());
         assertions.assertUserLoggedIn(loggedInPage, testUser.getEmail());
 
         // Test session persistence across page navigation
@@ -331,7 +341,7 @@ public class ComprehensiveLoginTests extends BaseTest {
         assertions.assertUserLoggedIn(homePage, testUser.getEmail());
 
         // Test direct URL access while logged in
-        driver.get(driver.getCurrentUrl() + "/account");
+        getDriver().get(getDriver().getCurrentUrl() + "/account");
         // Should maintain login state
 
         assertions.assertAll();
@@ -350,13 +360,14 @@ public class ComprehensiveLoginTests extends BaseTest {
     public void testParallelLogin(User user, String testDescription) {
         logger.info("=== Starting LOGIN_010: {} ===", testDescription);
 
+        HomePage homePage = getHomePage();
         LoginPage loginPage = homePage.clickLoginLink();
         assertions.assertPageUrl("login", "Should navigate to login page");
 
         loginPage.enterEmail(user.getEmail());
         loginPage.enterPassword(user.getPassword());
         BasePage result = loginPage.clickLoginButton();
-        HomePage resultPage = (result instanceof HomePage) ? (HomePage) result : new HomePage(driver);
+        HomePage resultPage = (result instanceof HomePage) ? (HomePage) result : new HomePage(getDriver());
 
         // Note: This test would typically use pre-registered users
         // For demo purposes, we test the login process
@@ -370,6 +381,7 @@ public class ComprehensiveLoginTests extends BaseTest {
     protected void additionalTeardown() {
         // Ensure user is logged out after each test
         try {
+            HomePage homePage = peekHomePage();
             if (homePage != null && homePage.isLogoutLinkDisplayed()) {
                 logger.info("Logging out user after test completion");
                 homePage.clickLogoutLink();

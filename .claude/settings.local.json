@@ -37,7 +37,8 @@
       "mcp__mvn-test-runner__run-test-method",
       "mcp__selenium-debug__test-wait-strategies",
       "mcp__mvn-test-runner__get-failure-summary",
-      "mcp__selenium-debug__inspect-test-class"
+      "mcp__selenium-debug__inspect-test-class",
+      "mcp__framework-navigator__get-page-object-selectors"
     ],
     "deny": [],
     "ask": []

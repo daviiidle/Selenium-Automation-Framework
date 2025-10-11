@@ -10,6 +10,7 @@ import org.testng.Assert;
 import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.WebDriverException;
 import org.openqa.selenium.JavascriptExecutor;
+import org.openqa.selenium.WebDriver;
 
 /**
  * Comprehensive Error Handling Test Suite
@@ -18,12 +19,23 @@ import org.openqa.selenium.JavascriptExecutor;
  */
 public class ErrorHandlingTests extends BaseTest {
     private DemoWebShopAssertions assertions;
-    private HomePage homePage;
 
     @Override
     protected void additionalSetup() {
-        assertions = new DemoWebShopAssertions(driver);
-        homePage = new HomePage(driver);
+        assertions = new DemoWebShopAssertions(getDriver());
+        setHomePage(new HomePage(getDriver()));
+    }
+
+    private HomePage home() {
+        return getHomePage();
+    }
+
+    private void updateHome(HomePage homePage) {
+        setHomePage(homePage);
+    }
+
+    private WebDriver webDriver() {
+        return getDriver();
     }
 
     /**
@@ -37,6 +49,8 @@ public class ErrorHandlingTests extends BaseTest {
     public void testNetworkErrorHandling() {
         logger.info("=== Starting ERROR_001: Network Error Handling ===");
 
+        HomePage homePage = home();
+        WebDriver driver = webDriver();
         SoftAssert softAssert = assertions.getSoftAssert();
 
         // Test 1: Page load timeout handling
@@ -60,6 +74,7 @@ public class ErrorHandlingTests extends BaseTest {
                 driver.get("https://demowebshop.tricentis.com/");
 
                 homePage = new HomePage(driver);
+                updateHome(homePage);
                 softAssert.assertTrue(homePage.isPageLoaded(),
                                      "Should be able to recover from timeout and load homepage");
 
@@ -102,6 +117,7 @@ public class ErrorHandlingTests extends BaseTest {
             // Navigate back to working site
             driver.get("https://demowebshop.tricentis.com/");
             homePage = new HomePage(driver);
+            updateHome(homePage);
 
             // Test registration form error handling
             RegisterPage registerPage = homePage.clickRegisterLink();
@@ -133,6 +149,7 @@ public class ErrorHandlingTests extends BaseTest {
 
         try {
             homePage = new HomePage(driver);
+            updateHome(homePage);
 
             // Test search with potential AJAX errors
             String searchTerm = "test search with special chars: <>&\"'";
@@ -179,6 +196,8 @@ public class ErrorHandlingTests extends BaseTest {
     public void testBrowserCompatibilityErrors() {
         logger.info("=== Starting ERROR_002: Browser Compatibility Error Handling ===");
 
+        HomePage homePage = home();
+        WebDriver driver = webDriver();
         SoftAssert softAssert = assertions.getSoftAssert();
 
         // Test 1: JavaScript error handling
@@ -195,6 +214,7 @@ public class ErrorHandlingTests extends BaseTest {
             // Verify page functionality still works after JS error
             try {
                 homePage = new HomePage(driver);
+                updateHome(homePage);
                 softAssert.assertTrue(homePage.isPageLoaded(),
                                      "Page should remain functional after JavaScript errors");
             } catch (Exception recoveryError) {
@@ -263,6 +283,7 @@ public class ErrorHandlingTests extends BaseTest {
 
                 // Verify original window still works
                 homePage = new HomePage(driver);
+                updateHome(homePage);
                 softAssert.assertTrue(homePage.isPageLoaded(),
                                      "Original window should remain functional after new window closed");
             }
@@ -286,6 +307,8 @@ public class ErrorHandlingTests extends BaseTest {
     public void testSessionAndAuthErrorHandling() {
         logger.info("=== Starting ERROR_003: Session and Authentication Error Handling ===");
 
+        HomePage homePage = home();
+        WebDriver driver = webDriver();
         SoftAssert softAssert = assertions.getSoftAssert();
 
         // Test 1: Invalid login attempts
@@ -406,6 +429,8 @@ public class ErrorHandlingTests extends BaseTest {
     public void testDataValidationErrorHandling() {
         logger.info("=== Starting ERROR_004: Data Validation Error Handling ===");
 
+        HomePage homePage = home();
+        WebDriver driver = webDriver();
         SoftAssert softAssert = assertions.getSoftAssert();
 
         // Test 1: Email validation errors
@@ -542,6 +567,7 @@ public class ErrorHandlingTests extends BaseTest {
     protected void additionalTeardown() {
         try {
             // Reset timeouts to default values
+            WebDriver driver = getDriver();
             driver.manage().timeouts().pageLoadTimeout(java.time.Duration.ofSeconds(30));
             driver.manage().timeouts().implicitlyWait(java.time.Duration.ofSeconds(10));
 
@@ -557,9 +583,12 @@ public class ErrorHandlingTests extends BaseTest {
 
             // Navigate back to homepage
             driver.get("https://demowebshop.tricentis.com/");
+            updateHome(new HomePage(driver));
 
             logger.info("Error handling test cleanup completed");
 
+        } catch (IllegalStateException ignored) {
+            // Driver already cleaned up
         } catch (Exception e) {
             logger.warn("Error during error handling test cleanup: {}", e.getMessage());
         }

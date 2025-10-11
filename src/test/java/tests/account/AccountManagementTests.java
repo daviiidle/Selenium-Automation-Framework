@@ -22,13 +22,20 @@ import java.util.List;
  */
 public class AccountManagementTests extends BaseTest {
     private DemoWebShopAssertions assertions;
-    private HomePage homePage;
     private User testUser;
 
     @Override
     protected void additionalSetup() {
-        assertions = new DemoWebShopAssertions(driver);
-        homePage = new HomePage(driver);
+        assertions = new DemoWebShopAssertions(getDriver());
+        setHomePage(new HomePage(getDriver()));
+    }
+
+    private HomePage home() {
+        return getHomePage();
+    }
+
+    private void updateHome(HomePage homePage) {
+        setHomePage(homePage);
     }
 
     @BeforeMethod(groups = {"account"})
@@ -36,6 +43,7 @@ public class AccountManagementTests extends BaseTest {
         // Create and register a test user for account management tests
         testUser = UserDataFactory.createRandomUser();
 
+        HomePage homePage = home();
         RegisterPage registerPage = homePage.clickRegisterLink();
         registerPage.selectGender(testUser.getGender())
                    .enterFirstName(testUser.getFirstName())
@@ -77,8 +85,12 @@ public class AccountManagementTests extends BaseTest {
         logger.info("Registration successful for: {}", testUser.getEmail());
         logger.info("Now logging in user...");
 
-        LoginPage loginPage = new LoginPage(driver).navigateToLoginPage();
-        homePage = (HomePage) loginPage.login(testUser.getEmail(), testUser.getPassword());
+        LoginPage loginPage = new LoginPage(getDriver()).navigateToLoginPage();
+        BasePage loginResult = loginPage.login(testUser.getEmail(), testUser.getPassword());
+        HomePage loggedInHome = (loginResult instanceof HomePage)
+            ? (HomePage) loginResult
+            : new HomePage(getDriver());
+        updateHome(loggedInHome);
 
         logger.info("Test user created and logged in: {}", testUser.getEmail());
     }
@@ -94,6 +106,7 @@ public class AccountManagementTests extends BaseTest {
     public void testViewAccountInformation() {
         logger.info("=== Starting ACCOUNT_001: View Account Information ===");
 
+        HomePage homePage = home();
         Assert.assertTrue(homePage.isUserLoggedIn(), "User should be logged in");
 
         // Navigate to account information page
@@ -187,6 +200,7 @@ public class AccountManagementTests extends BaseTest {
     public void testOrderHistoryManagement() {
         logger.info("=== Starting ACCOUNT_002: Order History Management ===");
 
+        HomePage homePage = home();
         try {
             // First, create an order for the user to have order history
             createTestOrderForUser();
@@ -336,6 +350,7 @@ public class AccountManagementTests extends BaseTest {
     public void testAddressBookManagement() {
         logger.info("=== Starting ACCOUNT_003: Address Book Management ===");
 
+        HomePage homePage = home();
         // Navigate to address book
         HomePage.AccountDropdown accountDropdown = homePage.clickAccountDropdown();
 
@@ -443,6 +458,7 @@ public class AccountManagementTests extends BaseTest {
     public void testAccountSecuritySettings() {
         logger.info("=== Starting ACCOUNT_004: Account Security Settings ===");
 
+        HomePage homePage = home();
         // Navigate to password change page
         HomePage.AccountDropdown accountDropdown = homePage.clickAccountDropdown();
 
@@ -520,6 +536,7 @@ public class AccountManagementTests extends BaseTest {
             logger.info("Creating test order for user order history");
 
             // Add item to cart
+            HomePage homePage = home();
             ProductDetailsPage productPage = homePage.navigateToRandomProduct();
             productPage.clickAddToCart();
 
@@ -550,6 +567,7 @@ public class AccountManagementTests extends BaseTest {
     @Override
     protected void additionalTeardown() {
         try {
+            HomePage homePage = peekHomePage();
             if (homePage != null && homePage.isUserLoggedIn()) {
                 homePage.clickLogoutLink();
                 logger.info("Test user logged out: {}", testUser.getEmail());

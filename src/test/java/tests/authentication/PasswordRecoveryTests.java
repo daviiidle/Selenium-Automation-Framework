@@ -17,12 +17,11 @@ import org.testng.asserts.SoftAssert;
  */
 public class PasswordRecoveryTests extends BaseTest {
     private DemoWebShopAssertions assertions;
-    private HomePage homePage;
 
     @Override
     protected void additionalSetup() {
-        assertions = new DemoWebShopAssertions(driver);
-        homePage = new HomePage(driver);
+        assertions = new DemoWebShopAssertions(getDriver());
+        setHomePage(new HomePage(getDriver()));
     }
 
     /**
@@ -35,6 +34,7 @@ public class PasswordRecoveryTests extends BaseTest {
     public void testValidPasswordRecovery() {
         logger.info("=== Starting PWD_001: Valid Password Recovery Request ===");
 
+        HomePage homePage = getHomePage();
         LoginPage loginPage = homePage.clickLoginLink();
         assertions.assertPageUrl("login", "Should navigate to login page");
 
@@ -72,6 +72,7 @@ public class PasswordRecoveryTests extends BaseTest {
     public void testInvalidEmailPasswordRecovery(String email, boolean isValidFormat, String description) {
         logger.info("=== Starting PWD_002: Password Recovery - {} ===", description);
 
+        HomePage homePage = getHomePage();
         LoginPage loginPage = homePage.clickLoginLink();
         PasswordRecoveryPage recoveryPage = loginPage.clickForgotPasswordLink();
         assertions.assertPageUrl("passwordrecovery", "Should navigate to password recovery page");
@@ -111,6 +112,7 @@ public class PasswordRecoveryTests extends BaseTest {
     public void testEmptyEmailPasswordRecovery() {
         logger.info("=== Starting PWD_003: Empty Email Password Recovery ===");
 
+        HomePage homePage = getHomePage();
         LoginPage loginPage = homePage.clickLoginLink();
         PasswordRecoveryPage recoveryPage = loginPage.clickForgotPasswordLink();
         assertions.assertPageUrl("passwordrecovery", "Should navigate to password recovery page");
@@ -149,6 +151,7 @@ public class PasswordRecoveryTests extends BaseTest {
     public void testPasswordRecoveryPageElements() {
         logger.info("=== Starting PWD_004: Password Recovery Page Elements ===");
 
+        HomePage homePage = getHomePage();
         LoginPage loginPage = homePage.clickLoginLink();
         PasswordRecoveryPage recoveryPage = loginPage.clickForgotPasswordLink();
         assertions.assertPageUrl("passwordrecovery", "Should navigate to password recovery page");
@@ -186,6 +189,7 @@ public class PasswordRecoveryTests extends BaseTest {
         logger.info("=== Starting PWD_005: Password Recovery Navigation ===");
 
         // Test navigation from login page
+        HomePage homePage = getHomePage();
         LoginPage loginPage = homePage.clickLoginLink();
         assertions.assertPageUrl("login", "Should navigate to login page");
 
@@ -199,7 +203,7 @@ public class PasswordRecoveryTests extends BaseTest {
         }
 
         // Test direct navigation to password recovery page
-        driver.get(getBaseUrl() + "/passwordrecovery");
+        getDriver().get(getBaseUrl() + "/passwordrecovery");
         assertions.assertPageUrl("passwordrecovery", "Should be able to access password recovery directly");
 
         assertions.assertAll();
@@ -216,6 +220,7 @@ public class PasswordRecoveryTests extends BaseTest {
     public void testMultipleRecoveryAttempts() {
         logger.info("=== Starting PWD_006: Multiple Email Recovery Attempts ===");
 
+        HomePage homePage = getHomePage();
         LoginPage loginPage = homePage.clickLoginLink();
         PasswordRecoveryPage recoveryPage = loginPage.clickForgotPasswordLink();
 
@@ -254,6 +259,7 @@ public class PasswordRecoveryTests extends BaseTest {
     public void testPasswordRecoverySecurity() {
         logger.info("=== Starting PWD_007: Password Recovery Security ===");
 
+        HomePage homePage = getHomePage();
         LoginPage loginPage = homePage.clickLoginLink();
         PasswordRecoveryPage recoveryPage = loginPage.clickForgotPasswordLink();
 
@@ -265,7 +271,7 @@ public class PasswordRecoveryTests extends BaseTest {
         String registeredResponse = recoveryPage.getConfirmationMessage();
 
         // Navigate back and test with unregistered email
-        driver.navigate().back();
+        getDriver().navigate().back();
         recoveryPage.clearEmailField();
 
         String unregisteredEmail = "nonexistent@test.com";

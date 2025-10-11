@@ -18,12 +18,11 @@ import java.util.List;
  */
 public class ProductCatalogTests extends BaseTest {
     private DemoWebShopAssertions assertions;
-    private HomePage homePage;
 
     @Override
     protected void additionalSetup() {
-        assertions = new DemoWebShopAssertions(driver);
-        homePage = new HomePage(driver);
+        assertions = new DemoWebShopAssertions(getDriver());
+        setHomePage(new HomePage(getDriver()));
     }
 
     /**
@@ -39,6 +38,7 @@ public class ProductCatalogTests extends BaseTest {
     public void testCategoryNavigation(String categoryName) {
         logger.info("=== Starting CATALOG_001: Category Navigation - {} ===", categoryName);
 
+        HomePage homePage = getHomePage();
         ProductCatalogPage catalogPage = homePage.navigateToCategory(categoryName);
         assertions.assertCategoryPageLoaded(catalogPage, categoryName);
 
@@ -78,6 +78,7 @@ public class ProductCatalogTests extends BaseTest {
         logger.info("=== Starting CATALOG_002: Product Display and Grid Layout ===");
 
         // Navigate to a category with products
+        HomePage homePage = getHomePage();
         ProductCatalogPage catalogPage = homePage.navigateToCategory("Books");
         assertions.assertCategoryPageLoaded(catalogPage, "Books");
 
@@ -131,6 +132,7 @@ public class ProductCatalogTests extends BaseTest {
     public void testProductSorting(String sortOption) {
         logger.info("=== Starting CATALOG_003: Product Sorting - {} ===", sortOption);
 
+        HomePage homePage = getHomePage();
         ProductCatalogPage catalogPage = homePage.navigateToCategory("Computers");
         assertions.assertCategoryPageLoaded(catalogPage, "Computers");
 
@@ -174,6 +176,7 @@ public class ProductCatalogTests extends BaseTest {
     public void testProductNavigationToDetails() {
         logger.info("=== Starting CATALOG_004: Product Navigation to Details ===");
 
+        HomePage homePage = getHomePage();
         ProductCatalogPage catalogPage = homePage.navigateToCategory("Electronics");
         assertions.assertCategoryPageLoaded(catalogPage, "Electronics");
 
@@ -222,6 +225,7 @@ public class ProductCatalogTests extends BaseTest {
         logger.info("=== Starting CATALOG_005: Catalog Pagination ===");
 
         // Navigate to category likely to have multiple pages
+        HomePage homePage = getHomePage();
         ProductCatalogPage catalogPage = homePage.navigateToCategory("Books");
         assertions.assertCategoryPageLoaded(catalogPage, "Books");
 
@@ -246,8 +250,9 @@ public class ProductCatalogTests extends BaseTest {
                                          "Second page should have products");
 
                     // Verify URL or page indicator changed
-                    softAssert.assertTrue(driver.getCurrentUrl().contains("page=2") ||
-                                         driver.getCurrentUrl().contains("p=2") ||
+                    String currentUrl = getDriver().getCurrentUrl();
+                    softAssert.assertTrue(currentUrl.contains("page=2") ||
+                                         currentUrl.contains("p=2") ||
                                          catalogPage.getCurrentPageNumber() == 2,
                                          "Should be on page 2 after clicking next");
 
@@ -279,6 +284,7 @@ public class ProductCatalogTests extends BaseTest {
           description = "Subcategory navigation should work correctly")
     public void testSubcategoryNavigation(String mainCategory, String subCategory, String description) {
         logger.info("=== Starting CATALOG_006: {} ===", description);
+        HomePage homePage = getHomePage();
 
         if (subCategory != null) {
             ProductCatalogPage catalogPage = homePage.navigateToSubcategory(mainCategory, subCategory);
@@ -321,6 +327,7 @@ public class ProductCatalogTests extends BaseTest {
     public void testProductFiltering(double minPrice, double maxPrice, String description) {
         logger.info("=== Starting CATALOG_007: {} ===", description);
 
+        HomePage homePage = getHomePage();
         ProductCatalogPage catalogPage = homePage.navigateToCategory("Computers");
         assertions.assertCategoryPageLoaded(catalogPage, "Computers");
 
@@ -366,6 +373,8 @@ public class ProductCatalogTests extends BaseTest {
 
         String[] categoriesToTest = {"Books", "Computers", "Electronics"};
 
+        HomePage homePage = getHomePage();
+
         for (String category : categoriesToTest) {
             long startTime = System.currentTimeMillis();
 
@@ -401,8 +410,9 @@ public class ProductCatalogTests extends BaseTest {
         logger.info("=== Starting CATALOG_009: Mobile Responsive Catalog ===");
 
         // Set mobile viewport size
-        driver.manage().window().setSize(new org.openqa.selenium.Dimension(375, 667));
+        getDriver().manage().window().setSize(new org.openqa.selenium.Dimension(375, 667));
 
+        HomePage homePage = getHomePage();
         ProductCatalogPage catalogPage = homePage.navigateToCategory("Jewelry");
         assertions.assertCategoryPageLoaded(catalogPage, "Jewelry");
 
@@ -425,7 +435,7 @@ public class ProductCatalogTests extends BaseTest {
         }
 
         // Restore desktop viewport
-        driver.manage().window().maximize();
+        getDriver().manage().window().maximize();
 
         assertions.assertAll();
         logger.info("=== CATALOG_009 completed: Mobile responsive testing ===");
@@ -434,7 +444,11 @@ public class ProductCatalogTests extends BaseTest {
     @Override
     protected void additionalTeardown() {
         // Ensure viewport is restored to desktop size
-        driver.manage().window().maximize();
+        try {
+            getDriver().manage().window().maximize();
+        } catch (Exception e) {
+            logger.debug("Could not maximize window during teardown: {}", e.getMessage());
+        }
         logger.debug("Product catalog test cleanup completed");
     }
 }
