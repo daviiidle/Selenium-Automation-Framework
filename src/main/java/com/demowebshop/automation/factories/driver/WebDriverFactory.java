@@ -5,6 +5,7 @@ import com.demowebshop.automation.enums.BrowserType;
 import io.github.bonigarcia.wdm.WebDriverManager;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.openqa.selenium.SessionNotCreatedException;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
@@ -38,22 +39,26 @@ public class WebDriverFactory {
      * @return WebDriver instance
      */
     public static WebDriver createDriver(BrowserType browserType) {
+        boolean preferNewHeadless = ConfigManager.isHeadlessMode() && shouldUseNewHeadlessMode();
         WebDriver driver = null;
-
         try {
-            if (ConfigManager.isRemoteExecution()) {
-                driver = createRemoteDriver(browserType);
-            } else {
-                driver = createLocalDriver(browserType);
-            }
-
-            configureDriver(driver);
-            driverThreadLocal.set(driver);
-
-            // Set the WebDriver instance for Selenide
-            WebDriverRunner.setWebDriver(driver);
-
+            driver = createAndRegisterDriver(browserType, preferNewHeadless);
             logger.info("Created {} driver successfully and configured for Selenide", browserType);
+        } catch (SessionNotCreatedException sessionException) {
+            if (shouldRetryWithLegacyHeadless(browserType, preferNewHeadless, sessionException)) {
+                logger.warn("Retrying {} driver creation with legacy headless mode due to session creation failure: {}",
+                        browserType, sessionException.getMessage());
+                try {
+                    driver = createAndRegisterDriver(browserType, false);
+                } catch (SessionNotCreatedException fallbackException) {
+                    logger.error("Legacy headless fallback failed for {}: {}", browserType, fallbackException.getMessage());
+                    throw new RuntimeException("WebDriver creation failed after legacy headless fallback", fallbackException);
+                }
+                logger.info("Created {} driver successfully using legacy headless fallback", browserType);
+            } else {
+                logger.error("Failed to create {} driver: {}", browserType, sessionException.getMessage());
+                throw new RuntimeException("WebDriver creation failed", sessionException);
+            }
 
         } catch (Exception e) {
             logger.error("Failed to create {} driver: {}", browserType, e.getMessage());
@@ -63,16 +68,33 @@ public class WebDriverFactory {
         return driver;
     }
 
+    private static WebDriver createAndRegisterDriver(BrowserType browserType, boolean useNewHeadless) {
+        WebDriver driver;
+        if (ConfigManager.isRemoteExecution()) {
+            driver = createRemoteDriver(browserType, useNewHeadless);
+        } else {
+            driver = createLocalDriver(browserType, useNewHeadless);
+        }
+
+        configureDriver(driver);
+        driverThreadLocal.set(driver);
+
+        // Set the WebDriver instance for Selenide
+        WebDriverRunner.setWebDriver(driver);
+
+        return driver;
+    }
+
     /**
      * Creates a local WebDriver instance
      * @param browserType Browser type
      * @return WebDriver instance
      */
-    private static WebDriver createLocalDriver(BrowserType browserType) {
+    private static WebDriver createLocalDriver(BrowserType browserType, boolean useNewHeadless) {
         switch (browserType) {
             case CHROME:
                 WebDriverManager.chromedriver().setup();
-                return new ChromeDriver(getChromeOptions());
+                return new ChromeDriver(getChromeOptions(useNewHeadless));
 
             case FIREFOX:
                 WebDriverManager.firefoxdriver().setup();
@@ -92,13 +114,18 @@ public class WebDriverFactory {
      * @param browserType Browser type
      * @return RemoteWebDriver instance
      */
-    private static WebDriver createRemoteDriver(BrowserType browserType) throws MalformedURLException {
+    private static WebDriver createRemoteDriver(BrowserType browserType, boolean useNewHeadless) {
         String gridUrl = ConfigManager.getGridUrl();
-        URL hubUrl = new URL(gridUrl);
+        URL hubUrl;
+        try {
+            hubUrl = new URL(gridUrl);
+        } catch (MalformedURLException e) {
+            throw new IllegalArgumentException("Invalid Selenium Grid URL: " + gridUrl, e);
+        }
 
         switch (browserType) {
             case CHROME:
-                return new RemoteWebDriver(hubUrl, getChromeOptions());
+                return new RemoteWebDriver(hubUrl, getChromeOptions(useNewHeadless));
             case FIREFOX:
                 return new RemoteWebDriver(hubUrl, getFirefoxOptions());
             case EDGE:
@@ -118,8 +145,15 @@ public class WebDriverFactory {
         driver.manage().timeouts().pageLoadTimeout(Duration.ofSeconds(ConfigManager.getPageLoadTimeout()));
         driver.manage().timeouts().scriptTimeout(Duration.ofSeconds(ConfigManager.getScriptTimeout()));
 
-        // Skip window maximization in headless mode to prevent errors
-        logger.debug("Skipping window maximization in headless mode");
+        if (ConfigManager.shouldMaximizeWindow() && !ConfigManager.isHeadlessMode()) {
+            try {
+                driver.manage().window().maximize();
+            } catch (Exception maximizeException) {
+                logger.debug("Window maximization skipped: {}", maximizeException.getMessage());
+            }
+        } else {
+            logger.debug("Skipping window maximization in headless mode");
+        }
 
         // Delete all cookies if configured
         if (ConfigManager.shouldDeleteCookies()) {
@@ -135,11 +169,12 @@ public class WebDriverFactory {
      * Gets Chrome options based on configuration - SIMPLIFIED for reliability
      * @return ChromeOptions
      */
-    private static ChromeOptions getChromeOptions() {
+    private static ChromeOptions getChromeOptions(boolean useNewHeadless) {
         ChromeOptions options = new ChromeOptions();
 
-        // Basic headless configuration that works (matches successful simple test)
-        options.addArguments("--headless=new");
+        if (ConfigManager.isHeadlessMode()) {
+            options.addArguments(useNewHeadless ? "--headless=new" : "--headless");
+        }
         options.addArguments("--no-sandbox");
         options.addArguments("--disable-dev-shm-usage");
         options.addArguments("--disable-gpu");
@@ -161,6 +196,36 @@ public class WebDriverFactory {
 
         logger.debug("Created simplified Chrome options for maximum compatibility");
         return options;
+    }
+    private static boolean shouldUseNewHeadlessMode() {
+        String headlessMode = ConfigManager.getProperty("browser.headless.mode", "auto");
+        if ("legacy".equalsIgnoreCase(headlessMode)) {
+            return false;
+        }
+        if ("new".equalsIgnoreCase(headlessMode)) {
+            return true;
+        }
+        // Auto mode: prefer new headless unless explicitly disabled via system property
+        return !Boolean.getBoolean("browser.headless.legacy");
+    }
+
+    private static boolean shouldRetryWithLegacyHeadless(BrowserType browserType,
+                                                         boolean triedNewHeadless,
+                                                         SessionNotCreatedException exception) {
+        if (browserType != BrowserType.CHROME) {
+            return false;
+        }
+        if (!ConfigManager.isHeadlessMode() || !triedNewHeadless) {
+            return false;
+        }
+        String message = exception.getMessage();
+        if (message == null) {
+            return true;
+        }
+        String normalized = message.toLowerCase();
+        return normalized.contains("chrome not reachable")
+                || normalized.contains("unknown error")
+                || normalized.contains("devtoolsactiveport");
     }
 
     /**
