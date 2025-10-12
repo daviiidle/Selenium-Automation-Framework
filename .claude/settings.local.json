@@ -6,7 +6,9 @@
       "mcp__claude-codex-mcp__repo_read",
       "mcp__claude-codex-mcp__repo_search",
       "mcp__claude-codex-mcp__repo_write",
-      "Read(//mnt/c/Users/D/Downloads/test-results-chrome-java21(5)/**)"
+      "Read(//mnt/c/Users/D/Downloads/test-results-chrome-java21(5)/**)",
+      "Read(//mnt/c/Users/D/Downloads/test-results-chrome-java21(5)/surefire-reports/junitreports/**)",
+      "Bash(done)"
     ],
     "deny": [],
     "ask": []

@@ -14,6 +14,7 @@ import com.codeborne.selenide.Configuration;
 import listeners.RetryAnalyzer;
 
 import java.lang.reflect.Method;
+import java.time.Duration;
 
 public abstract class BaseTest {
     protected final Logger logger = LogManager.getLogger(this.getClass());
@@ -49,6 +50,13 @@ public abstract class BaseTest {
                     }
                     
                     logger.info("WebDriver initialized successfully on attempt {}", retryCount + 1);
+                    
+                    // CRITICAL FIX: Set page load timeout IMMEDIATELY after driver creation
+                    // This prevents renderer timeouts during navigation
+                    driver.manage().timeouts().pageLoadTimeout(Duration.ofSeconds(600));
+                    driver.manage().timeouts().scriptTimeout(Duration.ofSeconds(120));
+                    logger.info("Extended timeouts configured: pageLoad=600s, script=120s");
+                    
                 } catch (Exception driverException) {
                     retryCount++;
                     logger.warn("WebDriver creation attempt {} failed: {}", retryCount, driverException.getMessage());
@@ -73,7 +81,7 @@ public abstract class BaseTest {
             HOME_PAGE.set(homePage);
             logger.info("HomePage object created");
 
-            // Navigate with retry logic for renderer timeouts
+            // Navigate with enhanced retry logic for renderer timeouts
             boolean navigationSuccess = false;
             int navAttempts = 0;
             int maxNavAttempts = 3;
@@ -83,6 +91,10 @@ public abstract class BaseTest {
                 navAttempts++;
                 try {
                     logger.info("Attempting homepage navigation (attempt {}/{})", navAttempts, maxNavAttempts);
+                    
+                    // Refresh page load timeout before each navigation attempt
+                    driver.manage().timeouts().pageLoadTimeout(Duration.ofSeconds(600));
+                    
                     homePage.navigateToHomePage();
 
                     // Wait for page to be fully loaded with extended timeout for CI
@@ -106,22 +118,48 @@ public abstract class BaseTest {
                     navigationSuccess = true;
                     logger.info("Navigated to homepage successfully on attempt {}", navAttempts);
                     
-                } catch (Exception navException) {
-                    lastNavException = navException;
-                    logger.warn("Navigation attempt {} failed: {}", navAttempts, navException.getMessage());
+                } catch (org.openqa.selenium.TimeoutException timeoutEx) {
+                    lastNavException = timeoutEx;
+                    logger.warn("Navigation attempt {} timed out: {}", navAttempts, timeoutEx.getMessage());
                     
-                    // If renderer timeout, wait longer before retry
-                    if (navException.getMessage() != null && 
-                        navException.getMessage().contains("Timed out receiving message from renderer")) {
-                        logger.warn("Detected renderer timeout - waiting 5s before retry");
-                        Thread.sleep(5000);
+                    // Enhanced handling for renderer timeouts
+                    if (timeoutEx.getMessage() != null && 
+                        timeoutEx.getMessage().contains("Timed out receiving message from renderer")) {
+                        logger.warn("Detected renderer communication timeout - extending wait and retrying");
+                        
+                        // Progressive backoff for renderer issues: 5s, 10s, 15s
+                        int rendererWait = navAttempts * 5000;
+                        logger.info("Waiting {}ms to allow renderer to stabilize", rendererWait);
+                        Thread.sleep(rendererWait);
+                        
+                        // Try to refresh the driver's page load timeout
+                        try {
+                            driver.manage().timeouts().pageLoadTimeout(Duration.ofSeconds(600));
+                            logger.debug("Reset page load timeout to 600s");
+                        } catch (Exception e) {
+                            logger.warn("Could not reset timeout: {}", e.getMessage());
+                        }
                     } else {
+                        // Standard timeout - shorter wait
                         Thread.sleep(2000);
                     }
                     
                     if (navAttempts >= maxNavAttempts) {
+                        logger.error("Navigation failed after {} attempts with timeout", maxNavAttempts);
+                        throw new RuntimeException("Failed to navigate to homepage: renderer timeout after " + 
+                                                  maxNavAttempts + " attempts", timeoutEx);
+                    }
+                    
+                } catch (Exception navException) {
+                    lastNavException = navException;
+                    logger.warn("Navigation attempt {} failed: {}", navAttempts, navException.getMessage());
+                    
+                    Thread.sleep(2000);
+                    
+                    if (navAttempts >= maxNavAttempts) {
                         logger.error("Navigation failed after {} attempts", maxNavAttempts);
-                        throw new RuntimeException("Failed to navigate to homepage after " + maxNavAttempts + " attempts", navException);
+                        throw new RuntimeException("Failed to navigate to homepage after " + 
+                                                  maxNavAttempts + " attempts", navException);
                     }
                 }
             }

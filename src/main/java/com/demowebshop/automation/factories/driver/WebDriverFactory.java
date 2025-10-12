@@ -185,7 +185,7 @@ public class WebDriverFactory {
     }
 
     /**
-     * Gets Chrome options optimized for CI renderer stability
+     * Gets Chrome options optimized for CI renderer stability with enhanced timeout protection
      * @return ChromeOptions
      */
     private static ChromeOptions getChromeOptions(boolean useNewHeadless) {
@@ -197,18 +197,27 @@ public class WebDriverFactory {
             logger.debug("Using legacy headless mode for CI stability");
         }
 
-        // CRITICAL: Core stability flags to prevent renderer crashes
+        // CRITICAL: Core stability flags to prevent renderer crashes and timeouts
         options.addArguments("--no-sandbox");
         options.addArguments("--disable-dev-shm-usage");
         options.addArguments("--disable-gpu");
         options.addArguments("--disable-software-rasterizer");
         
-        // ADDED: Prevent renderer timeout issues
+        // ENHANCED: Prevent renderer timeout issues with aggressive flags
         options.addArguments("--disable-browser-side-navigation");
         options.addArguments("--enable-features=NetworkService,NetworkServiceInProcess");
         options.addArguments("--disable-features=VizDisplayCompositor");
         options.addArguments("--force-device-scale-factor=1");
         options.addArguments("--disable-blink-features=AutomationControlled");
+        
+        // NEW: Additional renderer stability flags
+        options.addArguments("--disable-ipc-flooding-protection");
+        options.addArguments("--disable-renderer-backgrounding");
+        options.addArguments("--disable-backgrounding-occluded-windows");
+        options.addArguments("--disable-background-timer-throttling");
+        options.addArguments("--disable-renderer-accessibility");
+        options.addArguments("--disable-web-security");
+        options.addArguments("--allow-running-insecure-content");
         
         // Single process mode for CI reliability (avoids IPC issues)
         options.addArguments("--single-process");
@@ -225,13 +234,16 @@ public class WebDriverFactory {
         options.addArguments("--disable-sync");
         options.addArguments("--disable-translate");
         options.addArguments("--disable-background-networking");
-        options.addArguments("--disable-background-timer-throttling");
-        options.addArguments("--disable-backgrounding-occluded-windows");
-        options.addArguments("--disable-renderer-backgrounding");
         options.addArguments("--disable-breakpad");
         options.addArguments("--disable-component-update");
         options.addArguments("--disable-domain-reliability");
         options.addArguments("--disable-features=IsolateOrigins,site-per-process");
+        
+        // NEW: Network and resource loading optimizations
+        options.addArguments("--dns-prefetch-disable");
+        options.addArguments("--disable-preconnect");
+        options.addArguments("--disk-cache-size=0");
+        options.addArguments("--media-cache-size=0");
         
         // Logging controls
         options.addArguments("--log-level=3");
@@ -247,10 +259,20 @@ public class WebDriverFactory {
         options.setExperimentalOption("useAutomationExtension", false);
         options.setExperimentalOption("excludeSwitches", new String[]{"enable-automation", "enable-logging"});
         
-        // ADDED: Page load strategy for reliability
+        // NEW: Preferences for renderer stability
+        java.util.Map<String, Object> prefs = new java.util.HashMap<>();
+        prefs.put("profile.default_content_setting_values.notifications", 2);
+        prefs.put("profile.default_content_settings.popups", 0);
+        prefs.put("download.prompt_for_download", false);
+        prefs.put("download.default_directory", "/tmp/downloads");
+        prefs.put("safebrowsing.enabled", false);
+        prefs.put("plugins.always_open_pdf_externally", true);
+        options.setExperimentalOption("prefs", prefs);
+        
+        // CRITICAL: Page load strategy for reliability - NORMAL ensures full page load
         options.setPageLoadStrategy(org.openqa.selenium.PageLoadStrategy.NORMAL);
 
-        logger.debug("Created CI-hardened Chrome options with renderer stability flags");
+        logger.debug("Created CI-hardened Chrome options with enhanced renderer stability flags");
         return options;
     }
     
