@@ -240,44 +240,75 @@ jobs:
       with:
         path: all-results/
 
+    - name: Extract failures for AI analysis
+      run: |
+        chmod +x .github/scripts/extract-failures.sh
+        .github/scripts/extract-failures.sh all-results test-failures.txt
+
+    - name: Upload failure summary
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: 📋-test-failures-summary
+        path: test-failures.txt
+        retention-days: 30
+
     - name: Generate summary
       run: |
         echo "# 📊 Test Execution Summary" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        
+
         total_tests=0
         total_failures=0
         total_errors=0
         total_passed=0
-        
+
         # Count results from all shards
         for dir in all-results/*/; do
-          if [ -f "${dir}surefire-reports/TEST-"*.xml ]; then
+          if compgen -G "${dir}surefire-reports/TEST-*.xml" > /dev/null; then
             tests=$(grep -h 'tests=' "${dir}"surefire-reports/TEST-*.xml 2>/dev/null | head -1 | grep -oP 'tests="\K[0-9]+' || echo "0")
             failures=$(grep -h 'failures=' "${dir}"surefire-reports/TEST-*.xml 2>/dev/null | head -1 | grep -oP 'failures="\K[0-9]+' || echo "0")
             errors=$(grep -h 'errors=' "${dir}"surefire-reports/TEST-*.xml 2>/dev/null | head -1 | grep -oP 'errors="\K[0-9]+' || echo "0")
-            
+
             total_tests=$((total_tests + tests))
             total_failures=$((total_failures + failures))
             total_errors=$((total_errors + errors))
           fi
         done
-        
+
         total_passed=$((total_tests - total_failures - total_errors))
-        
+
         echo "| Metric | Count |" >> $GITHUB_STEP_SUMMARY
         echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
         echo "| Total Tests | $total_tests |" >> $GITHUB_STEP_SUMMARY
         echo "| ✅ Passed | $total_passed |" >> $GITHUB_STEP_SUMMARY
         echo "| ❌ Failed | $total_failures |" >> $GITHUB_STEP_SUMMARY
         echo "| ⚠️ Errors | $total_errors |" >> $GITHUB_STEP_SUMMARY
-        
+
         if [ $total_tests -gt 0 ]; then
           pass_rate=$(awk "BEGIN {printf \"%.2f\", $total_passed * 100 / $total_tests}")
           echo "| 🎯 Pass Rate | ${pass_rate}% |" >> $GITHUB_STEP_SUMMARY
         fi
-        
+
         echo "" >> $GITHUB_STEP_SUMMARY
+
+        # Add condensed failure list to summary
+        if [ -f test-failures.txt ]; then
+          failure_count=$(grep -c '^\[.*\].*:' test-failures.txt 2>/dev/null || echo "0")
+          if [ "$failure_count" -gt 0 ]; then
+            echo "## ❌ Failed Tests ($failure_count)" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            grep '^\[.*\].*:' test-failures.txt | head -20 >> $GITHUB_STEP_SUMMARY
+            if [ "$failure_count" -gt 20 ]; then
+              echo "... and $((failure_count - 20)) more (see artifact 📋-test-failures-summary)" >> $GITHUB_STEP_SUMMARY
+            fi
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          fi
+        fi
+
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "---" >> $GITHUB_STEP_SUMMARY
+        echo "**📋 Download:** test-failures-summary artifact for AI-optimized failure analysis" >> $GITHUB_STEP_SUMMARY
         echo "**Execution Mode:** Free Tier Optimized" >> $GITHUB_STEP_SUMMARY
 
   # Security scan - runs independently

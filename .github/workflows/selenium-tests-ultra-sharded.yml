@@ -139,13 +139,26 @@ jobs:
         path: target/site/allure-maven-plugin/
         retention-days: 30
 
+    - name: Extract failures for AI analysis
+      run: |
+        chmod +x .github/scripts/extract-failures.sh
+        .github/scripts/extract-failures.sh all-shards test-failures.txt
+
+    - name: Upload failure summary
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: 📋-test-failures-summary
+        path: test-failures.txt
+        retention-days: 30
+
     - name: Generate comprehensive test summary
       run: |
         echo "# 🚀 Ultra-Sharded Test Execution Summary" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "**Parallelization Strategy:** 12 independent test class shards" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        
+
         # Shard definitions
         declare -A shards
         shards["login"]=10
@@ -160,30 +173,30 @@ jobs:
         shards["comprehensive-homepage"]=10
         shards["error-handling"]=4
         shards["account"]=4
-        
+
         total_tests=0
         total_failures=0
         total_errors=0
         total_skipped=0
         total_passed=0
-        
+
         echo "## 📦 Per-Shard Results" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "| Shard | Expected | Tests | ✅ Pass | ❌ Fail | ⚠️ Error | ⏭️ Skip | Status |" >> $GITHUB_STEP_SUMMARY
         echo "|-------|----------|-------|---------|---------|----------|---------|--------|" >> $GITHUB_STEP_SUMMARY
-        
+
         for shard in login comprehensive-login registration password-recovery cart checkout product-catalog product-search homepage comprehensive-homepage error-handling account; do
           shard_dir="all-shards/results-${shard}/surefire-reports"
-          
+
           if [ -d "$shard_dir" ]; then
             tests=$(grep -h 'tests=' "$shard_dir"/TEST-*.xml 2>/dev/null | head -1 | grep -oP 'tests="\K[0-9]+' || echo "0")
             failures=$(grep -h 'failures=' "$shard_dir"/TEST-*.xml 2>/dev/null | head -1 | grep -oP 'failures="\K[0-9]+' || echo "0")
             errors=$(grep -h 'errors=' "$shard_dir"/TEST-*.xml 2>/dev/null | head -1 | grep -oP 'errors="\K[0-9]+' || echo "0")
             skipped=$(grep -h 'skipped=' "$shard_dir"/TEST-*.xml 2>/dev/null | head -1 | grep -oP 'skipped="\K[0-9]+' || echo "0")
-            
+
             passed=$((tests - failures - errors - skipped))
             expected=${shards[$shard]}
-            
+
             if [ "$failures" -eq 0 ] && [ "$errors" -eq 0 ]; then
               status="✅"
             elif [ "$failures" -gt 5 ] || [ "$errors" -gt 3 ]; then
@@ -191,9 +204,9 @@ jobs:
             else
               status="⚠️"
             fi
-            
+
             echo "| $shard | $expected | $tests | $passed | $failures | $errors | $skipped | $status |" >> $GITHUB_STEP_SUMMARY
-            
+
             total_tests=$((total_tests + tests))
             total_failures=$((total_failures + failures))
             total_errors=$((total_errors + errors))
@@ -203,7 +216,7 @@ jobs:
             echo "| $shard | ${shards[$shard]} | 0 | 0 | 0 | 0 | 0 | ⚫ |" >> $GITHUB_STEP_SUMMARY
           fi
         done
-        
+
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "## 📊 Overall Summary" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
@@ -214,14 +227,31 @@ jobs:
         echo "| ❌ Failed | $total_failures |" >> $GITHUB_STEP_SUMMARY
         echo "| ⚠️ Errors | $total_errors |" >> $GITHUB_STEP_SUMMARY
         echo "| ⏭️ Skipped | $total_skipped |" >> $GITHUB_STEP_SUMMARY
-        
+
         if [ $total_tests -gt 0 ]; then
           pass_rate=$(awk "BEGIN {printf \"%.2f\", $total_passed * 100 / $total_tests}")
           echo "| 🎯 Pass Rate | ${pass_rate}% |" >> $GITHUB_STEP_SUMMARY
         fi
-        
+
         echo "" >> $GITHUB_STEP_SUMMARY
+
+        # Add condensed failure list to summary
+        if [ -f test-failures.txt ]; then
+          failure_count=$(grep -c '^\[.*\].*:' test-failures.txt 2>/dev/null || echo "0")
+          if [ "$failure_count" -gt 0 ]; then
+            echo "## ❌ Failed Tests ($failure_count)" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            grep '^\[.*\].*:' test-failures.txt | head -20 >> $GITHUB_STEP_SUMMARY
+            if [ "$failure_count" -gt 20 ]; then
+              echo "... and $((failure_count - 20)) more (see artifact 📋-test-failures-summary)" >> $GITHUB_STEP_SUMMARY
+            fi
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+          fi
+        fi
+
         echo "---" >> $GITHUB_STEP_SUMMARY
+        echo "**📋 Download:** test-failures-summary artifact for AI-optimized failure analysis" >> $GITHUB_STEP_SUMMARY
         echo "**Execution Model:** Each test class runs in its own isolated GitHub Actions job" >> $GITHUB_STEP_SUMMARY
         echo "**Benefits:** Maximum parallelization, isolated failures, faster feedback (~3x speedup)" >> $GITHUB_STEP_SUMMARY
 
