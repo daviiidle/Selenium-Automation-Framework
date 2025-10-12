@@ -153,14 +153,16 @@ public class WebDriverFactory {
     }
 
     /**
-     * Configures the WebDriver with common settings
+     * Configures the WebDriver with extended timeouts for CI stability
      * @param driver WebDriver instance to configure
      */
     private static void configureDriver(WebDriver driver) {
-        // Set timeouts
+        // CRITICAL: Extended timeouts for CI environment - renderer needs more time
         driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(ConfigManager.getImplicitTimeout()));
-        driver.manage().timeouts().pageLoadTimeout(Duration.ofSeconds(ConfigManager.getPageLoadTimeout()));
-        driver.manage().timeouts().scriptTimeout(Duration.ofSeconds(ConfigManager.getScriptTimeout()));
+        driver.manage().timeouts().pageLoadTimeout(Duration.ofSeconds(600));  // 10 minutes for CI
+        driver.manage().timeouts().scriptTimeout(Duration.ofSeconds(120));     // 2 minutes for scripts
+        
+        logger.info("Set extended timeouts: pageLoad=600s, script=120s for CI stability");
 
         if (ConfigManager.shouldMaximizeWindow() && !ConfigManager.isHeadlessMode()) {
             try {
@@ -183,61 +185,75 @@ public class WebDriverFactory {
     }
 
     /**
-     * Gets Chrome options optimized for CI environment and parallel execution
+     * Gets Chrome options optimized for CI renderer stability
      * @return ChromeOptions
      */
     private static ChromeOptions getChromeOptions(boolean useNewHeadless) {
         ChromeOptions options = new ChromeOptions();
 
-        // Force legacy headless for maximum CI stability (--headless=new causes timeouts)
+        // Force legacy headless for maximum CI stability
         if (ConfigManager.isHeadlessMode()) {
-            options.addArguments("--headless");  // Force legacy headless for reliability
+            options.addArguments("--headless");
             logger.debug("Using legacy headless mode for CI stability");
         }
 
-        // Critical stability flags for CI environment
+        // CRITICAL: Core stability flags to prevent renderer crashes
         options.addArguments("--no-sandbox");
         options.addArguments("--disable-dev-shm-usage");
         options.addArguments("--disable-gpu");
         options.addArguments("--disable-software-rasterizer");
-
-        // Window and rendering settings
+        
+        // ADDED: Prevent renderer timeout issues
+        options.addArguments("--disable-browser-side-navigation");
+        options.addArguments("--enable-features=NetworkService,NetworkServiceInProcess");
+        options.addArguments("--disable-features=VizDisplayCompositor");
+        options.addArguments("--force-device-scale-factor=1");
+        options.addArguments("--disable-blink-features=AutomationControlled");
+        
+        // Single process mode for CI reliability (avoids IPC issues)
+        options.addArguments("--single-process");
+        options.addArguments("--no-zygote");
+        
+        // Window settings
         options.addArguments("--window-size=1920,1080");
+        options.addArguments("--start-maximized");
+        
+        // Disable unnecessary features that can cause hangs
         options.addArguments("--disable-extensions");
         options.addArguments("--disable-infobars");
-
-        // Memory and resource limits for parallel execution stability
-        options.addArguments("--max-old-space-size=512");
-        options.addArguments("--js-flags=--max-old-space-size=512");
-        options.addArguments("--renderer-process-limit=2");
-        options.addArguments("--disable-hang-monitor");
-
-        // Reduce resource usage for parallel execution
-        options.addArguments("--disable-background-networking");
         options.addArguments("--disable-default-apps");
         options.addArguments("--disable-sync");
-        options.addArguments("--metrics-recording-only");
-        options.addArguments("--no-first-run");
+        options.addArguments("--disable-translate");
+        options.addArguments("--disable-background-networking");
         options.addArguments("--disable-background-timer-throttling");
-        options.addArguments("--disable-renderer-backgrounding");
         options.addArguments("--disable-backgrounding-occluded-windows");
-
-        // Prevent hanging during session creation
-        options.addArguments("--disable-features=VizDisplayCompositor");
+        options.addArguments("--disable-renderer-backgrounding");
+        options.addArguments("--disable-breakpad");
+        options.addArguments("--disable-component-update");
+        options.addArguments("--disable-domain-reliability");
         options.addArguments("--disable-features=IsolateOrigins,site-per-process");
-        options.addArguments("--disable-blink-features=AutomationControlled");
-
-        // Logging and debugging controls
+        
+        // Logging controls
         options.addArguments("--log-level=3");
         options.addArguments("--silent");
-
-        // Anti-automation detection (minimal)
+        options.addArguments("--disable-logging");
+        
+        // Memory and resource settings (moderate for CI)
+        options.addArguments("--disable-hang-monitor");
+        options.addArguments("--metrics-recording-only");
+        options.addArguments("--no-first-run");
+        
+        // Experimental options
         options.setExperimentalOption("useAutomationExtension", false);
         options.setExperimentalOption("excludeSwitches", new String[]{"enable-automation", "enable-logging"});
+        
+        // ADDED: Page load strategy for reliability
+        options.setPageLoadStrategy(org.openqa.selenium.PageLoadStrategy.NORMAL);
 
-        logger.debug("Created CI-optimized Chrome options with legacy headless and resource limits");
+        logger.debug("Created CI-hardened Chrome options with renderer stability flags");
         return options;
     }
+    
     private static boolean shouldUseNewHeadlessMode() {
         String headlessMode = ConfigManager.getProperty("browser.headless.mode", "auto");
         if ("legacy".equalsIgnoreCase(headlessMode)) {

@@ -21,7 +21,7 @@ public abstract class BaseTest {
     private static final ThreadLocal<WebDriver> DRIVER = new ThreadLocal<>();
     private static final ThreadLocal<HomePage> HOME_PAGE = new ThreadLocal<>();
 
-    @BeforeMethod(timeOut = 240000) // Extended 4 minute timeout for CI environment
+    @BeforeMethod(timeOut = 600000) // 10 minute timeout to match page load timeout
     public void setUp(Method method) {
         logger.info("Starting test: {}.{}", this.getClass().getSimpleName(), method.getName());
 
@@ -34,10 +34,10 @@ public abstract class BaseTest {
 
             BrowserType browserType = BrowserType.fromString(browserName);
             
-            // Create WebDriver with extended CI timeout handling
+            // Create WebDriver with extended CI timeout handling and retries
             WebDriver driver = null;
             int retryCount = 0;
-            int maxRetries = 2;
+            int maxRetries = 3; // Increased to 3 attempts
             
             while (driver == null && retryCount < maxRetries) {
                 try {
@@ -57,8 +57,10 @@ public abstract class BaseTest {
                         throw new RuntimeException("WebDriver creation failed after " + maxRetries + " attempts", driverException);
                     }
                     
-                    // Small delay before retry
-                    Thread.sleep(2000);
+                    // Exponential backoff: 2s, 4s, 8s
+                    int waitTime = (int) Math.pow(2, retryCount) * 1000;
+                    logger.info("Waiting {}ms before retry...", waitTime);
+                    Thread.sleep(waitTime);
                 }
             }
             
@@ -71,26 +73,57 @@ public abstract class BaseTest {
             HOME_PAGE.set(homePage);
             logger.info("HomePage object created");
 
-            // Navigate with explicit timeout and retry logic
-            try {
-                homePage.navigateToHomePage();
+            // Navigate with retry logic for renderer timeouts
+            boolean navigationSuccess = false;
+            int navAttempts = 0;
+            int maxNavAttempts = 3;
+            Exception lastNavException = null;
+            
+            while (!navigationSuccess && navAttempts < maxNavAttempts) {
+                navAttempts++;
+                try {
+                    logger.info("Attempting homepage navigation (attempt {}/{})", navAttempts, maxNavAttempts);
+                    homePage.navigateToHomePage();
 
-                // Wait for page to be fully loaded with extended timeout for CI
-                int maxWait = 30; // Extended from 10s to 30s for CI stability
-                int waited = 0;
-                while (!homePage.isPageLoaded() && waited < maxWait) {
-                    Thread.sleep(1000);
-                    waited++;
+                    // Wait for page to be fully loaded with extended timeout for CI
+                    int maxWait = 60; // Extended to 60s for CI renderer delays
+                    int waited = 0;
+                    while (!homePage.isPageLoaded() && waited < maxWait) {
+                        Thread.sleep(1000);
+                        waited++;
+                        
+                        if (waited % 10 == 0) {
+                            logger.debug("Still waiting for page load... {}s elapsed", waited);
+                        }
+                    }
+
+                    if (!homePage.isPageLoaded()) {
+                        logger.warn("Homepage may not be fully loaded after {}s, but continuing", maxWait);
+                    } else {
+                        logger.info("Homepage fully loaded and verified");
+                    }
+                    
+                    navigationSuccess = true;
+                    logger.info("Navigated to homepage successfully on attempt {}", navAttempts);
+                    
+                } catch (Exception navException) {
+                    lastNavException = navException;
+                    logger.warn("Navigation attempt {} failed: {}", navAttempts, navException.getMessage());
+                    
+                    // If renderer timeout, wait longer before retry
+                    if (navException.getMessage() != null && 
+                        navException.getMessage().contains("Timed out receiving message from renderer")) {
+                        logger.warn("Detected renderer timeout - waiting 5s before retry");
+                        Thread.sleep(5000);
+                    } else {
+                        Thread.sleep(2000);
+                    }
+                    
+                    if (navAttempts >= maxNavAttempts) {
+                        logger.error("Navigation failed after {} attempts", maxNavAttempts);
+                        throw new RuntimeException("Failed to navigate to homepage after " + maxNavAttempts + " attempts", navException);
+                    }
                 }
-
-                if (!homePage.isPageLoaded()) {
-                    logger.warn("Homepage may not be fully loaded after {}s", maxWait);
-                }
-
-                logger.info("Navigated to homepage successfully");
-            } catch (Exception navException) {
-                logger.error("Navigation failed: {}", navException.getMessage());
-                throw new RuntimeException("Failed to navigate to homepage", navException);
             }
 
             // Call additional setup hook for test classes
@@ -180,7 +213,7 @@ public abstract class BaseTest {
         System.setProperty("selenide.headless", "true");
         System.setProperty("headless", "true");
         System.setProperty("browser.headless", "true");
-        System.setProperty("chrome.switches", "--headless=new --no-sandbox --disable-dev-shm-usage");
+        System.setProperty("chrome.switches", "--headless --no-sandbox --disable-dev-shm-usage");
 
         // Initialize Selenide with headless configuration
         Configuration.headless = true;

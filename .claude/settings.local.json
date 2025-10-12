@@ -5,7 +5,8 @@
       "Bash(for file in \"/mnt/c/Users/D/Downloads/test-results-chrome-java21(3)/surefire-reports/junitreports/\"TEST-*.xml)",
       "mcp__claude-codex-mcp__repo_read",
       "mcp__claude-codex-mcp__repo_search",
-      "mcp__claude-codex-mcp__repo_write"
+      "mcp__claude-codex-mcp__repo_write",
+      "Read(//mnt/c/Users/D/Downloads/test-results-chrome-java21(5)/**)"
     ],
     "deny": [],
     "ask": []
