@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
+<suite name="DemoWebShop Shard 3 - Products and Navigation Tests"
+       parallel="methods"
+       thread-count="4"
+       verbose="1"
+       data-provider-thread-count="2"
+       time-out="240000"
+       preserve-order="false">
+
+    <parameter name="browser" value="chrome"/>
+    <parameter name="headless" value="true"/>
+
+    <test name="Products Tests Shard"
+          preserve-order="false"
+          parallel="methods"
+          thread-count="2">
+        <packages>
+            <package name="tests.products"/>
+        </packages>
+    </test>
+
+    <test name="Navigation Tests Shard"
+          preserve-order="false"
+          parallel="methods"
+          thread-count="2">
+        <packages>
+            <package name="tests.navigation"/>
+        </packages>
+    </test>
+
+</suite>

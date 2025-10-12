@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
+<suite name="Shard: Error Handling Tests" parallel="methods" thread-count="2" verbose="1" time-out="240000">
+    <parameter name="browser" value="chrome"/>
+    <parameter name="headless" value="true"/>
+    <test name="Error Handling Tests" parallel="methods" thread-count="2">
+        <classes>
+            <class name="tests.error.ErrorHandlingTests"/>
+        </classes>
+    </test>
+</suite>

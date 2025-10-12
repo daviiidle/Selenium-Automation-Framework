@@ -1,0 +1,305 @@
+name: Selenium Tests (Free Tier Optimized)
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    - cron: '0 2 * * *'  # Nightly full run
+  workflow_dispatch:  # Manual trigger with options
+    inputs:
+      test_suite:
+        description: 'Test suite to run'
+        required: true
+        default: 'smoke'
+        type: choice
+        options:
+          - smoke
+          - sharded-4
+          - sharded-12
+          - full
+
+jobs:
+  # Fast smoke tests for PRs - 1 job, ~3 minutes
+  smoke-tests:
+    if: github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && github.event.inputs.test_suite == 'smoke')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write
+      pull-requests: write
+    
+    name: "⚡ Smoke Tests (Fast PR Validation)"
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up JDK 21
+      uses: actions/setup-java@v4
+      with:
+        java-version: '21'
+        distribution: 'temurin'
+
+    - name: Cache Maven dependencies
+      uses: actions/cache@v4
+      with:
+        path: ~/.m2
+        key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+        restore-keys: ${{ runner.os }}-m2
+
+    - name: Set up Chrome
+      uses: browser-actions/setup-chrome@latest
+
+    - name: Run smoke tests
+      run: |
+        mvn clean test -Pci \
+          -DsuiteXmlFile=src/test/resources/config/testng-smoke.xml \
+          -Dbrowser=chrome \
+          -Dheadless=true
+      env:
+        MAVEN_OPTS: "-Xmx2g -Xms512m"
+
+    - name: Upload smoke test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: smoke-test-results
+        path: target/surefire-reports/
+        retention-days: 3
+
+    - name: Publish Test Results
+      uses: dorny/test-reporter@v1
+      if: always()
+      with:
+        name: "⚡ Smoke Test Results"
+        path: target/surefire-reports/TEST-*.xml
+        reporter: java-junit
+        fail-on-error: true
+
+  # 4-shard strategy for pushes to develop - Balanced speed/cost
+  test-sharded-4:
+    if: |
+      (github.event_name == 'push' && github.ref == 'refs/heads/develop') ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.test_suite == 'sharded-4')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write
+      pull-requests: write
+    strategy:
+      fail-fast: false
+      max-parallel: 2  # Free tier friendly - 2 jobs at a time
+      matrix:
+        shard: [1, 2, 3, 4]
+
+    name: "🔹 Shard ${{ matrix.shard }}/4"
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up JDK 21
+      uses: actions/setup-java@v4
+      with:
+        java-version: '21'
+        distribution: 'temurin'
+
+    - name: Cache Maven dependencies
+      uses: actions/cache@v4
+      with:
+        path: ~/.m2
+        key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+        restore-keys: ${{ runner.os }}-m2
+
+    - name: Set up Chrome
+      uses: browser-actions/setup-chrome@latest
+
+    - name: Run shard ${{ matrix.shard }}
+      run: |
+        mvn clean test -Pci \
+          -DsuiteXmlFile=src/test/resources/config/testng-shard-${{ matrix.shard }}.xml \
+          -Dbrowser=chrome \
+          -Dheadless=true \
+          -Dmaven.test.failure.ignore=true
+      env:
+        MAVEN_OPTS: "-Xmx2g -Xms512m"
+
+    - name: Upload shard results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: shard-${{ matrix.shard }}-results
+        path: target/surefire-reports/
+        retention-days: 7
+
+    - name: Publish Shard Results
+      uses: dorny/test-reporter@v1
+      if: always()
+      with:
+        name: "🔹 Shard ${{ matrix.shard }}/4"
+        path: target/surefire-reports/TEST-*.xml
+        reporter: java-junit
+        fail-on-error: false
+
+  # 12-shard strategy for main branch and nightly runs
+  test-sharded-12:
+    if: |
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'schedule') ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.test_suite == 'sharded-12')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write
+      pull-requests: write
+    strategy:
+      fail-fast: false
+      max-parallel: 3  # Free tier: Run 3 at a time to stay under limits
+      matrix:
+        shard:
+          - { name: "login", file: "testng-shard-login.xml" }
+          - { name: "comprehensive-login", file: "testng-shard-comprehensive-login.xml" }
+          - { name: "registration", file: "testng-shard-registration.xml" }
+          - { name: "password-recovery", file: "testng-shard-password-recovery.xml" }
+          - { name: "cart", file: "testng-shard-cart.xml" }
+          - { name: "checkout", file: "testng-shard-checkout.xml" }
+          - { name: "product-catalog", file: "testng-shard-product-catalog.xml" }
+          - { name: "product-search", file: "testng-shard-product-search.xml" }
+          - { name: "homepage", file: "testng-shard-homepage.xml" }
+          - { name: "comprehensive-homepage", file: "testng-shard-comprehensive-homepage.xml" }
+          - { name: "error-handling", file: "testng-shard-error-handling.xml" }
+          - { name: "account", file: "testng-shard-account.xml" }
+
+    name: "🧪 ${{ matrix.shard.name }}"
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up JDK 21
+      uses: actions/setup-java@v4
+      with:
+        java-version: '21'
+        distribution: 'temurin'
+
+    - name: Cache Maven dependencies
+      uses: actions/cache@v4
+      with:
+        path: ~/.m2
+        key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+        restore-keys: ${{ runner.os }}-m2
+
+    - name: Set up Chrome
+      uses: browser-actions/setup-chrome@latest
+
+    - name: Run ${{ matrix.shard.name }} tests
+      run: |
+        mvn clean test -Pci \
+          -DsuiteXmlFile=src/test/resources/config/shards/${{ matrix.shard.file }} \
+          -Dbrowser=chrome \
+          -Dheadless=true \
+          -Dmaven.test.failure.ignore=true
+      env:
+        MAVEN_OPTS: "-Xmx1536m -Xms512m"  # Reduced memory for free tier
+
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: results-${{ matrix.shard.name }}
+        path: target/surefire-reports/
+        retention-days: 7
+
+    - name: Publish Test Results
+      uses: dorny/test-reporter@v1
+      if: always()
+      with:
+        name: "🧪 ${{ matrix.shard.name }}"
+        path: target/surefire-reports/TEST-*.xml
+        reporter: java-junit
+        fail-on-error: false
+
+  # Merge reports for sharded runs
+  merge-reports:
+    needs: [test-sharded-4, test-sharded-12]
+    if: always() && (needs.test-sharded-4.result != 'skipped' || needs.test-sharded-12.result != 'skipped')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write
+      pull-requests: write
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Download all results
+      uses: actions/download-artifact@v4
+      with:
+        path: all-results/
+
+    - name: Generate summary
+      run: |
+        echo "# 📊 Test Execution Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        total_tests=0
+        total_failures=0
+        total_errors=0
+        total_passed=0
+        
+        # Count results from all shards
+        for dir in all-results/*/; do
+          if [ -f "${dir}surefire-reports/TEST-"*.xml ]; then
+            tests=$(grep -h 'tests=' "${dir}"surefire-reports/TEST-*.xml 2>/dev/null | head -1 | grep -oP 'tests="\K[0-9]+' || echo "0")
+            failures=$(grep -h 'failures=' "${dir}"surefire-reports/TEST-*.xml 2>/dev/null | head -1 | grep -oP 'failures="\K[0-9]+' || echo "0")
+            errors=$(grep -h 'errors=' "${dir}"surefire-reports/TEST-*.xml 2>/dev/null | head -1 | grep -oP 'errors="\K[0-9]+' || echo "0")
+            
+            total_tests=$((total_tests + tests))
+            total_failures=$((total_failures + failures))
+            total_errors=$((total_errors + errors))
+          fi
+        done
+        
+        total_passed=$((total_tests - total_failures - total_errors))
+        
+        echo "| Metric | Count |" >> $GITHUB_STEP_SUMMARY
+        echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
+        echo "| Total Tests | $total_tests |" >> $GITHUB_STEP_SUMMARY
+        echo "| ✅ Passed | $total_passed |" >> $GITHUB_STEP_SUMMARY
+        echo "| ❌ Failed | $total_failures |" >> $GITHUB_STEP_SUMMARY
+        echo "| ⚠️ Errors | $total_errors |" >> $GITHUB_STEP_SUMMARY
+        
+        if [ $total_tests -gt 0 ]; then
+          pass_rate=$(awk "BEGIN {printf \"%.2f\", $total_passed * 100 / $total_tests}")
+          echo "| 🎯 Pass Rate | ${pass_rate}% |" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Execution Mode:** Free Tier Optimized" >> $GITHUB_STEP_SUMMARY
+
+  # Security scan - runs independently
+  security-scan:
+    if: github.event_name == 'schedule' || github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      contents: read
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+
+    - name: Upload Trivy scan results
+      uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: 'trivy-results.sarif'

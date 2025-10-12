@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
+<suite name="DemoWebShop Shard 2 - Cart and Checkout Tests"
+       parallel="methods"
+       thread-count="4"
+       verbose="1"
+       data-provider-thread-count="2"
+       time-out="240000"
+       preserve-order="false">
+
+    <parameter name="browser" value="chrome"/>
+    <parameter name="headless" value="true"/>
+
+    <test name="Cart Tests Shard"
+          preserve-order="false"
+          parallel="methods"
+          thread-count="2">
+        <packages>
+            <package name="tests.cart"/>
+        </packages>
+    </test>
+
+    <test name="Checkout Tests Shard"
+          preserve-order="false"
+          parallel="methods"
+          thread-count="2">
+        <packages>
+            <package name="tests.checkout"/>
+        </packages>
+    </test>
+
+</suite>

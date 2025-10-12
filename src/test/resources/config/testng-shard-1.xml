@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
+<suite name="DemoWebShop Shard 1 - Authentication Tests"
+       parallel="methods"
+       thread-count="4"
+       verbose="1"
+       data-provider-thread-count="2"
+       time-out="240000"
+       preserve-order="false">
+
+    <parameter name="browser" value="chrome"/>
+    <parameter name="headless" value="true"/>
+
+    <test name="Authentication Tests Shard"
+          preserve-order="false"
+          parallel="methods"
+          thread-count="4">
+        <packages>
+            <package name="tests.authentication"/>
+        </packages>
+    </test>
+
+</suite>

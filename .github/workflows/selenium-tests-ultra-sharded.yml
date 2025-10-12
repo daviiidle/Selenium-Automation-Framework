@@ -1,0 +1,248 @@
+name: Selenium Tests (Ultra-Sharded - 12 Parallel Jobs)
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    - cron: '0 2 * * *'
+
+jobs:
+  test-ultra-sharded:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write
+      pull-requests: write
+    strategy:
+      fail-fast: false
+      max-parallel: 12  # Run all 12 shards simultaneously
+      matrix:
+        browser: [chrome]
+        java-version: [21]
+        shard:
+          - { name: "login", file: "testng-shard-login.xml", tests: 10 }
+          - { name: "comprehensive-login", file: "testng-shard-comprehensive-login.xml", tests: 10 }
+          - { name: "registration", file: "testng-shard-registration.xml", tests: 8 }
+          - { name: "password-recovery", file: "testng-shard-password-recovery.xml", tests: 7 }
+          - { name: "cart", file: "testng-shard-cart.xml", tests: 5 }
+          - { name: "checkout", file: "testng-shard-checkout.xml", tests: 5 }
+          - { name: "product-catalog", file: "testng-shard-product-catalog.xml", tests: 9 }
+          - { name: "product-search", file: "testng-shard-product-search.xml", tests: 5 }
+          - { name: "homepage", file: "testng-shard-homepage.xml", tests: 5 }
+          - { name: "comprehensive-homepage", file: "testng-shard-comprehensive-homepage.xml", tests: 10 }
+          - { name: "error-handling", file: "testng-shard-error-handling.xml", tests: 4 }
+          - { name: "account", file: "testng-shard-account.xml", tests: 4 }
+
+    name: "🧪 ${{ matrix.shard.name }} (${{ matrix.shard.tests }} tests)"
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up JDK ${{ matrix.java-version }}
+      uses: actions/setup-java@v4
+      with:
+        java-version: ${{ matrix.java-version }}
+        distribution: 'temurin'
+
+    - name: Cache Maven dependencies
+      uses: actions/cache@v4
+      with:
+        path: ~/.m2
+        key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+        restore-keys: ${{ runner.os }}-m2
+
+    - name: Set up Chrome
+      uses: browser-actions/setup-chrome@latest
+
+    - name: Install dependencies
+      run: mvn dependency:resolve -q
+
+    - name: Run ${{ matrix.shard.name }} shard
+      run: |
+        mvn clean test -Pci \
+          -DsuiteXmlFile=src/test/resources/config/shards/${{ matrix.shard.file }} \
+          -Dbrowser=${{ matrix.browser }} \
+          -Dheadless=true \
+          -Dmaven.test.failure.ignore=true
+      env:
+        MAVEN_OPTS: "-Xmx2g -Xms512m"
+        BROWSER: ${{ matrix.browser }}
+        HEADLESS: true
+        ENVIRONMENT: dev
+        SHARD_NAME: ${{ matrix.shard.name }}
+
+    - name: Generate Allure Report
+      if: always()
+      run: mvn allure:report -q
+
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: results-${{ matrix.shard.name }}
+        path: |
+          target/surefire-reports/
+          target/allure-results/
+        retention-days: 7
+
+    - name: Publish Test Results
+      uses: dorny/test-reporter@v1
+      if: always()
+      with:
+        name: "📊 ${{ matrix.shard.name }}"
+        path: target/surefire-reports/TEST-*.xml
+        reporter: java-junit
+        fail-on-error: false
+
+  merge-and-report:
+    needs: test-ultra-sharded
+    runs-on: ubuntu-latest
+    if: always()
+    permissions:
+      contents: read
+      checks: write
+      pull-requests: write
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up JDK 21
+      uses: actions/setup-java@v4
+      with:
+        java-version: '21'
+        distribution: 'temurin'
+
+    - name: Download all shard results
+      uses: actions/download-artifact@v4
+      with:
+        pattern: results-*
+        path: all-shards/
+
+    - name: Merge Allure results
+      run: |
+        mkdir -p target/allure-results
+        find all-shards/ -type f -path "*/allure-results/*" -exec cp {} target/allure-results/ \;
+        echo "Merged $(find target/allure-results/ -type f | wc -l) result files"
+        
+    - name: Generate combined Allure report
+      run: mvn allure:report
+        
+    - name: Upload combined Allure report
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: 📈-combined-allure-report
+        path: target/site/allure-maven-plugin/
+        retention-days: 30
+
+    - name: Generate comprehensive test summary
+      run: |
+        echo "# 🚀 Ultra-Sharded Test Execution Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Parallelization Strategy:** 12 independent test class shards" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        # Shard definitions
+        declare -A shards
+        shards["login"]=10
+        shards["comprehensive-login"]=10
+        shards["registration"]=8
+        shards["password-recovery"]=7
+        shards["cart"]=5
+        shards["checkout"]=5
+        shards["product-catalog"]=9
+        shards["product-search"]=5
+        shards["homepage"]=5
+        shards["comprehensive-homepage"]=10
+        shards["error-handling"]=4
+        shards["account"]=4
+        
+        total_tests=0
+        total_failures=0
+        total_errors=0
+        total_skipped=0
+        total_passed=0
+        
+        echo "## 📦 Per-Shard Results" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "| Shard | Expected | Tests | ✅ Pass | ❌ Fail | ⚠️ Error | ⏭️ Skip | Status |" >> $GITHUB_STEP_SUMMARY
+        echo "|-------|----------|-------|---------|---------|----------|---------|--------|" >> $GITHUB_STEP_SUMMARY
+        
+        for shard in login comprehensive-login registration password-recovery cart checkout product-catalog product-search homepage comprehensive-homepage error-handling account; do
+          shard_dir="all-shards/results-${shard}/surefire-reports"
+          
+          if [ -d "$shard_dir" ]; then
+            tests=$(grep -h 'tests=' "$shard_dir"/TEST-*.xml 2>/dev/null | head -1 | grep -oP 'tests="\K[0-9]+' || echo "0")
+            failures=$(grep -h 'failures=' "$shard_dir"/TEST-*.xml 2>/dev/null | head -1 | grep -oP 'failures="\K[0-9]+' || echo "0")
+            errors=$(grep -h 'errors=' "$shard_dir"/TEST-*.xml 2>/dev/null | head -1 | grep -oP 'errors="\K[0-9]+' || echo "0")
+            skipped=$(grep -h 'skipped=' "$shard_dir"/TEST-*.xml 2>/dev/null | head -1 | grep -oP 'skipped="\K[0-9]+' || echo "0")
+            
+            passed=$((tests - failures - errors - skipped))
+            expected=${shards[$shard]}
+            
+            if [ "$failures" -eq 0 ] && [ "$errors" -eq 0 ]; then
+              status="✅"
+            elif [ "$failures" -gt 5 ] || [ "$errors" -gt 3 ]; then
+              status="🔴"
+            else
+              status="⚠️"
+            fi
+            
+            echo "| $shard | $expected | $tests | $passed | $failures | $errors | $skipped | $status |" >> $GITHUB_STEP_SUMMARY
+            
+            total_tests=$((total_tests + tests))
+            total_failures=$((total_failures + failures))
+            total_errors=$((total_errors + errors))
+            total_skipped=$((total_skipped + skipped))
+            total_passed=$((total_passed + passed))
+          else
+            echo "| $shard | ${shards[$shard]} | 0 | 0 | 0 | 0 | 0 | ⚫ |" >> $GITHUB_STEP_SUMMARY
+          fi
+        done
+        
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "## 📊 Overall Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "| Metric | Count |" >> $GITHUB_STEP_SUMMARY
+        echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
+        echo "| Total Tests | $total_tests |" >> $GITHUB_STEP_SUMMARY
+        echo "| ✅ Passed | $total_passed |" >> $GITHUB_STEP_SUMMARY
+        echo "| ❌ Failed | $total_failures |" >> $GITHUB_STEP_SUMMARY
+        echo "| ⚠️ Errors | $total_errors |" >> $GITHUB_STEP_SUMMARY
+        echo "| ⏭️ Skipped | $total_skipped |" >> $GITHUB_STEP_SUMMARY
+        
+        if [ $total_tests -gt 0 ]; then
+          pass_rate=$(awk "BEGIN {printf \"%.2f\", $total_passed * 100 / $total_tests}")
+          echo "| 🎯 Pass Rate | ${pass_rate}% |" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "---" >> $GITHUB_STEP_SUMMARY
+        echo "**Execution Model:** Each test class runs in its own isolated GitHub Actions job" >> $GITHUB_STEP_SUMMARY
+        echo "**Benefits:** Maximum parallelization, isolated failures, faster feedback (~3x speedup)" >> $GITHUB_STEP_SUMMARY
+
+  security-scan:
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      contents: read
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+
+    - name: Upload Trivy scan results
+      uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: 'trivy-results.sarif'
