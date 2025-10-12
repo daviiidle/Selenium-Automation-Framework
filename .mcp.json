@@ -17,6 +17,14 @@
       "args": [
         "framework-navigator-mcp/dist/index.js"
       ]
+    },
+    "claude-codex-mcp": {
+      "command": "/mnt/c/Users/D/claude-codex-mcp/venv/bin/python",
+      "args": ["-m", "src.server"],
+      "cwd": "/mnt/c/Users/D/claude-codex-mcp",
+      "env": {
+        "REPO_ROOT": "/mnt/c/Users/D/Java Selenium framework"
+      }
     }
   }
 }

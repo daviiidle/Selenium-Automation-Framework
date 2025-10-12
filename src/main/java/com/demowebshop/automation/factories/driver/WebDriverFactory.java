@@ -86,15 +86,32 @@ public class WebDriverFactory {
     }
 
     /**
-     * Creates a local WebDriver instance
+     * Creates a local WebDriver instance with timeout protection
      * @param browserType Browser type
      * @return WebDriver instance
      */
     private static WebDriver createLocalDriver(BrowserType browserType, boolean useNewHeadless) {
         switch (browserType) {
             case CHROME:
-                WebDriverManager.chromedriver().setup();
-                return new ChromeDriver(getChromeOptions(useNewHeadless));
+                // Clear cache and setup ChromeDriver
+                WebDriverManager.chromedriver().clearDriverCache().setup();
+                ChromeOptions chromeOptions = getChromeOptions(useNewHeadless);
+
+                try {
+                    // Create driver with 60-second timeout to prevent hanging
+                    logger.debug("Creating ChromeDriver with 60s timeout protection");
+                    java.util.concurrent.CompletableFuture<ChromeDriver> driverFuture =
+                        java.util.concurrent.CompletableFuture.supplyAsync(() -> new ChromeDriver(chromeOptions));
+                    ChromeDriver driver = driverFuture.get(60, java.util.concurrent.TimeUnit.SECONDS);
+                    logger.info("ChromeDriver created successfully");
+                    return driver;
+                } catch (java.util.concurrent.TimeoutException e) {
+                    logger.error("ChromeDriver creation timed out after 60 seconds");
+                    throw new RuntimeException("ChromeDriver creation timeout - browser may be hanging", e);
+                } catch (Exception e) {
+                    logger.error("ChromeDriver creation failed: {}", e.getMessage());
+                    throw new RuntimeException("ChromeDriver creation failed", e);
+                }
 
             case FIREFOX:
                 WebDriverManager.firefoxdriver().setup();
@@ -166,35 +183,59 @@ public class WebDriverFactory {
     }
 
     /**
-     * Gets Chrome options based on configuration - SIMPLIFIED for reliability
+     * Gets Chrome options optimized for CI environment and parallel execution
      * @return ChromeOptions
      */
     private static ChromeOptions getChromeOptions(boolean useNewHeadless) {
         ChromeOptions options = new ChromeOptions();
 
+        // Force legacy headless for maximum CI stability (--headless=new causes timeouts)
         if (ConfigManager.isHeadlessMode()) {
-            options.addArguments(useNewHeadless ? "--headless=new" : "--headless");
+            options.addArguments("--headless");  // Force legacy headless for reliability
+            logger.debug("Using legacy headless mode for CI stability");
         }
+
+        // Critical stability flags for CI environment
         options.addArguments("--no-sandbox");
         options.addArguments("--disable-dev-shm-usage");
         options.addArguments("--disable-gpu");
+        options.addArguments("--disable-software-rasterizer");
 
-        // Minimal additional arguments for stability
+        // Window and rendering settings
         options.addArguments("--window-size=1920,1080");
         options.addArguments("--disable-extensions");
+        options.addArguments("--disable-infobars");
 
-        // Stability improvements for parallel execution
+        // Memory and resource limits for parallel execution stability
+        options.addArguments("--max-old-space-size=512");
+        options.addArguments("--js-flags=--max-old-space-size=512");
+        options.addArguments("--renderer-process-limit=2");
+        options.addArguments("--disable-hang-monitor");
+
+        // Reduce resource usage for parallel execution
         options.addArguments("--disable-background-networking");
         options.addArguments("--disable-default-apps");
         options.addArguments("--disable-sync");
         options.addArguments("--metrics-recording-only");
         options.addArguments("--no-first-run");
+        options.addArguments("--disable-background-timer-throttling");
+        options.addArguments("--disable-renderer-backgrounding");
+        options.addArguments("--disable-backgrounding-occluded-windows");
+
+        // Prevent hanging during session creation
+        options.addArguments("--disable-features=VizDisplayCompositor");
+        options.addArguments("--disable-features=IsolateOrigins,site-per-process");
+        options.addArguments("--disable-blink-features=AutomationControlled");
+
+        // Logging and debugging controls
+        options.addArguments("--log-level=3");
+        options.addArguments("--silent");
 
         // Anti-automation detection (minimal)
         options.setExperimentalOption("useAutomationExtension", false);
-        options.setExperimentalOption("excludeSwitches", new String[]{"enable-automation"});
+        options.setExperimentalOption("excludeSwitches", new String[]{"enable-automation", "enable-logging"});
 
-        logger.debug("Created simplified Chrome options for maximum compatibility");
+        logger.debug("Created CI-optimized Chrome options with legacy headless and resource limits");
         return options;
     }
     private static boolean shouldUseNewHeadlessMode() {
