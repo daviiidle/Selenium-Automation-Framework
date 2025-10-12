@@ -21,7 +21,7 @@ public abstract class BaseTest {
     private static final ThreadLocal<WebDriver> DRIVER = new ThreadLocal<>();
     private static final ThreadLocal<HomePage> HOME_PAGE = new ThreadLocal<>();
 
-    @BeforeMethod(timeOut = 120000) // 2 minute timeout for CI
+    @BeforeMethod(timeOut = 240000) // Extended 4 minute timeout for CI environment
     public void setUp(Method method) {
         logger.info("Starting test: {}.{}", this.getClass().getSimpleName(), method.getName());
 
@@ -33,13 +33,36 @@ public abstract class BaseTest {
             logger.info("Using browser: {} in headless mode: {}", browserName, config.isHeadless());
 
             BrowserType browserType = BrowserType.fromString(browserName);
-            WebDriver driver = WebDriverFactory.createDriver(browserType);
-            DRIVER.set(driver);
-
-            if (driver == null) {
-                throw new RuntimeException("WebDriver initialization failed - driver is null");
+            
+            // Create WebDriver with extended CI timeout handling
+            WebDriver driver = null;
+            int retryCount = 0;
+            int maxRetries = 2;
+            
+            while (driver == null && retryCount < maxRetries) {
+                try {
+                    logger.info("Creating WebDriver (attempt {}/{})", retryCount + 1, maxRetries);
+                    driver = WebDriverFactory.createDriver(browserType);
+                    
+                    if (driver == null) {
+                        throw new RuntimeException("WebDriver initialization failed - driver is null");
+                    }
+                    
+                    logger.info("WebDriver initialized successfully on attempt {}", retryCount + 1);
+                } catch (Exception driverException) {
+                    retryCount++;
+                    logger.warn("WebDriver creation attempt {} failed: {}", retryCount, driverException.getMessage());
+                    
+                    if (retryCount >= maxRetries) {
+                        throw new RuntimeException("WebDriver creation failed after " + maxRetries + " attempts", driverException);
+                    }
+                    
+                    // Small delay before retry
+                    Thread.sleep(2000);
+                }
             }
-            logger.info("WebDriver initialized successfully");
+            
+            DRIVER.set(driver);
 
             // Ensure Selenide WebDriver is bound for this thread
             com.codeborne.selenide.WebDriverRunner.setWebDriver(driver);
@@ -48,12 +71,12 @@ public abstract class BaseTest {
             HOME_PAGE.set(homePage);
             logger.info("HomePage object created");
 
-            // Navigate with explicit timeout
+            // Navigate with explicit timeout and retry logic
             try {
                 homePage.navigateToHomePage();
 
-                // Wait for page to be fully loaded
-                int maxWait = 10;
+                // Wait for page to be fully loaded with extended timeout for CI
+                int maxWait = 30; // Extended from 10s to 30s for CI stability
                 int waited = 0;
                 while (!homePage.isPageLoaded() && waited < maxWait) {
                     Thread.sleep(1000);

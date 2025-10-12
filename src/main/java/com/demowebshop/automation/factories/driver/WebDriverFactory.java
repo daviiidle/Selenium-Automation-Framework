@@ -86,7 +86,7 @@ public class WebDriverFactory {
     }
 
     /**
-     * Creates a local WebDriver instance with timeout protection
+     * Creates a local WebDriver instance with extended timeout protection for CI
      * @param browserType Browser type
      * @return WebDriver instance
      */
@@ -98,15 +98,15 @@ public class WebDriverFactory {
                 ChromeOptions chromeOptions = getChromeOptions(useNewHeadless);
 
                 try {
-                    // Create driver with 60-second timeout to prevent hanging
-                    logger.debug("Creating ChromeDriver with 60s timeout protection");
+                    // Extended timeout to 180 seconds for CI environment stability
+                    logger.debug("Creating ChromeDriver with 180s timeout for CI stability");
                     java.util.concurrent.CompletableFuture<ChromeDriver> driverFuture =
                         java.util.concurrent.CompletableFuture.supplyAsync(() -> new ChromeDriver(chromeOptions));
-                    ChromeDriver driver = driverFuture.get(60, java.util.concurrent.TimeUnit.SECONDS);
+                    ChromeDriver driver = driverFuture.get(180, java.util.concurrent.TimeUnit.SECONDS);
                     logger.info("ChromeDriver created successfully");
                     return driver;
                 } catch (java.util.concurrent.TimeoutException e) {
-                    logger.error("ChromeDriver creation timed out after 60 seconds");
+                    logger.error("ChromeDriver creation timed out after 180 seconds");
                     throw new RuntimeException("ChromeDriver creation timeout - browser may be hanging", e);
                 } catch (Exception e) {
                     logger.error("ChromeDriver creation failed: {}", e.getMessage());
