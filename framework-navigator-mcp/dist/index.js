@@ -83,16 +83,29 @@ class FrameworkNavigatorServer {
         });
     }
     registerTools() {
-        // Register navigation tools
-        const navigationTools = registerNavigationTools(FRAMEWORK_ROOT);
-        navigationTools.forEach(tool => this.tools.set(tool.name, tool));
-        // Register search tools
-        const searchTools = registerSearchTools(FRAMEWORK_ROOT);
-        searchTools.forEach(tool => this.tools.set(tool.name, tool));
-        // Register relationship tools
-        const relationshipTools = registerRelationshipTools(FRAMEWORK_ROOT);
-        relationshipTools.forEach(tool => this.tools.set(tool.name, tool));
-        console.error(`Registered ${this.tools.size} navigation tools`);
+        // Register navigation tools (always enabled - core functionality)
+        if (process.env.ENABLE_NAVIGATION_TOOLS !== 'false') {
+            const navigationTools = registerNavigationTools(FRAMEWORK_ROOT);
+            navigationTools.forEach(tool => this.tools.set(tool.name, tool));
+            console.error(`✓ Registered ${navigationTools.length} navigation tools`);
+        }
+        // Register search tools (basic or full mode)
+        const searchMode = process.env.ENABLE_SEARCH_TOOLS || 'full';
+        if (searchMode !== 'false') {
+            const searchTools = registerSearchTools(FRAMEWORK_ROOT, searchMode);
+            searchTools.forEach(tool => this.tools.set(tool.name, tool));
+            console.error(`✓ Registered ${searchTools.length} search tools (${searchMode} mode)`);
+        }
+        // Register relationship tools (optional - token-heavy)
+        if (process.env.ENABLE_RELATIONSHIP_TOOLS === 'true') {
+            const relationshipTools = registerRelationshipTools(FRAMEWORK_ROOT);
+            relationshipTools.forEach(tool => this.tools.set(tool.name, tool));
+            console.error(`✓ Registered ${relationshipTools.length} relationship tools`);
+        }
+        else {
+            console.error(`✗ Relationship tools disabled (saves ~5k tokens)`);
+        }
+        console.error(`Total: ${this.tools.size} tools registered`);
     }
     async run() {
         const transport = new StdioServerTransport();

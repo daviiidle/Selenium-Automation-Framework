@@ -88,13 +88,15 @@ public class ProductDataProvider {
 
     /**
      * Provides comprehensive product browsing scenarios
+     * NOTE: Books category does not have subcategories on DemoWebShop
      */
     @DataProvider(name = "productBrowsingData")
     public static Object[][] getProductBrowsingData() {
         return new Object[][]{
-            {"Books", "Fiction", "Browse fiction books category"},
-            {"Books", "Science", "Browse science books category"},
-            {"Books", "Computing and Internet", "Browse computing books category"},
+            // Books subcategories removed - not supported by DemoWebShop
+            // {"Books", "Fiction", "Browse fiction books category"},
+            // {"Books", "Science", "Browse science books category"},
+            // {"Books", "Computing and Internet", "Browse computing books category"},
             {"Computers", "Desktops", "Browse desktop computers category"},
             {"Computers", "Notebooks", "Browse notebook computers category"},
             {"Computers", "Accessories", "Browse computer accessories category"},
@@ -168,11 +170,13 @@ public class ProductDataProvider {
 
     /**
      * Provides multiple product addition scenarios
+     * NOTE: Books does not have subcategories on DemoWebShop
      */
     @DataProvider(name = "multipleProductData")
     public static Object[][] getMultipleProductData() {
         return new Object[][]{
-            {"Books", "Fiction", 2, "Add fiction book with quantity 2"},
+            // Books subcategory removed - not supported
+            // {"Books", "Fiction", 2, "Add fiction book with quantity 2"},
             {"Computers", "Desktops", 1, "Add desktop computer"},
             {"Electronics", null, 3, "Add electronics item with quantity 3"},
             {"Apparel & Shoes", null, 1, "Add apparel item"},

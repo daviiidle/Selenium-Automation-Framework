@@ -2,7 +2,7 @@
  * Search Tools
  * Tools for searching across the framework
  */
-export declare function registerSearchTools(frameworkRoot: string): ({
+export declare function registerSearchTools(frameworkRoot: string, mode?: string): ({
     name: string;
     description: string;
     inputSchema: {
@@ -19,8 +19,6 @@ export declare function registerSearchTools(frameworkRoot: string): ({
             annotation?: undefined;
             detailed?: undefined;
             fileName?: undefined;
-            importPattern?: undefined;
-            providerName?: undefined;
         };
         required: string[];
     };
@@ -56,8 +54,6 @@ export declare function registerSearchTools(frameworkRoot: string): ({
             pageObject?: undefined;
             detailed?: undefined;
             fileName?: undefined;
-            importPattern?: undefined;
-            providerName?: undefined;
         };
         required: string[];
     };
@@ -82,8 +78,6 @@ export declare function registerSearchTools(frameworkRoot: string): ({
             pageObject?: undefined;
             annotation?: undefined;
             fileName?: undefined;
-            importPattern?: undefined;
-            providerName?: undefined;
         };
         required?: undefined;
     };
@@ -111,8 +105,6 @@ export declare function registerSearchTools(frameworkRoot: string): ({
             pageObject?: undefined;
             annotation?: undefined;
             detailed?: undefined;
-            importPattern?: undefined;
-            providerName?: undefined;
         };
         required: string[];
     };
@@ -143,12 +135,8 @@ export declare function registerSearchTools(frameworkRoot: string): ({
                 type: string;
                 description: string;
             };
-            selectorName?: undefined;
-            pageObject?: undefined;
-            annotation?: undefined;
-            detailed?: undefined;
-            fileName?: undefined;
             providerName?: undefined;
+            pageObject?: undefined;
         };
         required: string[];
     };
@@ -168,12 +156,8 @@ export declare function registerSearchTools(frameworkRoot: string): ({
                 type: string;
                 description: string;
             };
-            selectorName?: undefined;
-            pageObject?: undefined;
-            annotation?: undefined;
-            detailed?: undefined;
-            fileName?: undefined;
             importPattern?: undefined;
+            pageObject?: undefined;
         };
         required?: undefined;
     };
@@ -192,10 +176,6 @@ export declare function registerSearchTools(frameworkRoot: string): ({
                 type: string;
                 description: string;
             };
-            selectorName?: undefined;
-            annotation?: undefined;
-            detailed?: undefined;
-            fileName?: undefined;
             importPattern?: undefined;
             providerName?: undefined;
         };

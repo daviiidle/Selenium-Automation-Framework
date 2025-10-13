@@ -1,30 +1,62 @@
 {
   "mcpServers": {
-    "selenium-debug": {
-      "command": "node",
-      "args": [
-        "selenium-debug-mcp/dist/index.js"
-      ]
-    },
-    "mvn-test-runner": {
-      "command": "node",
-      "args": [
-        "mvn-test-runner-mcp/dist/index.js"
-      ]
-    },
     "framework-navigator": {
+      "comment": "Essential - Core navigation with reduced footprint",
       "command": "node",
       "args": [
         "framework-navigator-mcp/dist/index.js"
-      ]
+      ],
+      "env": {
+        "ENABLE_NAVIGATION_TOOLS": "true",
+        "ENABLE_SEARCH_TOOLS": "basic",
+        "ENABLE_RELATIONSHIP_TOOLS": "false"
+      }
     },
     "claude-codex-mcp": {
+      "comment": "Essential - Primary executor for repo/git/quality operations",
       "command": "/mnt/c/Users/D/claude-codex-mcp/venv/bin/python",
       "args": ["-m", "src.server"],
       "cwd": "/mnt/c/Users/D/claude-codex-mcp",
       "env": {
         "REPO_ROOT": "/mnt/c/Users/D/Java Selenium framework"
       }
+    },
+    "memory-keeper": {
+      "comment": "Context memory - Trimmed to essentials only",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-memory"
+      ],
+      "env": {
+        "ENABLE_TIMELINE": "false",
+        "ENABLE_VISUALIZE": "false",
+        "ENABLE_BATCH_OPS": "false",
+        "ENABLE_CHANNEL_OPS": "false",
+        "ENABLE_ANALYSIS": "false"
+      }
+    }
+  },
+  "disabledServers": {
+    "selenium-debug": {
+      "comment": "On-demand only - Enable when debugging selectors/waits",
+      "command": "node",
+      "args": [
+        "selenium-debug-mcp/dist/index.js"
+      ],
+      "env": {
+        "ENABLE_LIVE_TESTING": "true",
+        "ENABLE_HEALING": "true",
+        "ENABLE_STATIC_ANALYSIS": "false",
+        "ENABLE_FIX_SUGGESTIONS": "false"
+      }
+    },
+    "mvn-test-runner": {
+      "comment": "Disabled - Use only if explicitly needed for test execution",
+      "command": "node",
+      "args": [
+        "mvn-test-runner-mcp/dist/index.js"
+      ]
     }
   }
 }

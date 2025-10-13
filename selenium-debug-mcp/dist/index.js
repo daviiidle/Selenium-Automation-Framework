@@ -124,19 +124,37 @@ class SeleniumDebugServer {
         });
     }
     registerTools() {
-        // Register live testing tools
-        const liveTestingTools = registerLiveTestingTools(FRAMEWORK_ROOT);
-        liveTestingTools.forEach(tool => this.tools.set(tool.name, tool));
-        // Register static analysis tools
-        const staticAnalysisTools = registerStaticAnalysisTools(FRAMEWORK_ROOT);
-        staticAnalysisTools.forEach(tool => this.tools.set(tool.name, tool));
-        // Register fix suggestion tools
-        const fixSuggestionTools = registerFixSuggestionTools(FRAMEWORK_ROOT);
-        fixSuggestionTools.forEach(tool => this.tools.set(tool.name, tool));
-        // Register self-healing tools
-        const healingTools = registerHealingTools(FRAMEWORK_ROOT);
-        healingTools.forEach(tool => this.tools.set(tool.name, tool));
-        console.error(`Registered ${this.tools.size} tools`);
+        // Register live testing tools (essential for selector validation)
+        if (process.env.ENABLE_LIVE_TESTING !== 'false') {
+            const liveTestingTools = registerLiveTestingTools(FRAMEWORK_ROOT);
+            liveTestingTools.forEach(tool => this.tools.set(tool.name, tool));
+            console.error(`✓ Registered ${liveTestingTools.length} live testing tools`);
+        }
+        // Register static analysis tools (can be disabled if using other analyzers)
+        if (process.env.ENABLE_STATIC_ANALYSIS === 'true') {
+            const staticAnalysisTools = registerStaticAnalysisTools(FRAMEWORK_ROOT);
+            staticAnalysisTools.forEach(tool => this.tools.set(tool.name, tool));
+            console.error(`✓ Registered ${staticAnalysisTools.length} static analysis tools`);
+        }
+        else {
+            console.error(`✗ Static analysis tools disabled`);
+        }
+        // Register fix suggestion tools (useful but can be disabled)
+        if (process.env.ENABLE_FIX_SUGGESTIONS === 'true') {
+            const fixSuggestionTools = registerFixSuggestionTools(FRAMEWORK_ROOT);
+            fixSuggestionTools.forEach(tool => this.tools.set(tool.name, tool));
+            console.error(`✓ Registered ${fixSuggestionTools.length} fix suggestion tools`);
+        }
+        else {
+            console.error(`✗ Fix suggestion tools disabled`);
+        }
+        // Register self-healing tools (essential when enabled)
+        if (process.env.ENABLE_HEALING !== 'false') {
+            const healingTools = registerHealingTools(FRAMEWORK_ROOT);
+            healingTools.forEach(tool => this.tools.set(tool.name, tool));
+            console.error(`✓ Registered ${healingTools.length} healing tools`);
+        }
+        console.error(`Total: ${this.tools.size} selenium-debug tools registered`);
     }
     registerResources() {
         // Register framework resources

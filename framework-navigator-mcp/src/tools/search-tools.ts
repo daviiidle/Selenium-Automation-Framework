@@ -26,8 +26,9 @@ async function ensureIndexed(frameworkRoot: string): Promise<FrameworkIndex> {
   return frameworkIndex;
 }
 
-export function registerSearchTools(frameworkRoot: string) {
-  return [
+export function registerSearchTools(frameworkRoot: string, mode: string = 'full') {
+  // Essential tools (basic mode) - most commonly used
+  const basicTools = [
     {
       name: 'search-selectors',
       description: 'Search for selectors by name or pattern',
@@ -190,7 +191,10 @@ export function registerSearchTools(frameworkRoot: string) {
         };
       },
     },
+  ]; // End of basic tools
 
+  // Advanced tools (full mode only) - rarely used, token-heavy
+  const advancedTools = [
     {
       name: 'search-imports',
       description: 'Find classes that import a specific package or class',
@@ -314,4 +318,11 @@ export function registerSearchTools(frameworkRoot: string) {
       },
     },
   ];
+
+  // Return tools based on mode
+  if (mode === 'basic') {
+    return basicTools;
+  } else {
+    return [...basicTools, ...advancedTools];
+  }
 }
