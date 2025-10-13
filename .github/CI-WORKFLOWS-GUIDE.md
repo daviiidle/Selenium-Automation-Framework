@@ -2,11 +2,11 @@
 
 ## Available Workflows
 
-Your repository has 3 optimized CI workflows for different scenarios:
+Your repository has 2 optimized CI workflows for different scenarios:
 
-### 1. Free Tier (`selenium-tests-free-tier.yml`)
+### 1. CI Optimized (`selenium-tests-free-tier.yml`)
 
-**Best for:** GitHub Free accounts, cost optimization
+**Best for:** GitHub accounts with limited resources, cost optimization
 
 **Features:**
 - Smart strategy selection based on context
@@ -39,44 +39,13 @@ Your repository has 3 optimized CI workflows for different scenarios:
 
 **Execution time:** 10-12 minutes
 
-### 3. Ultra Sharded (`selenium-tests-ultra-sharded.yml`)
-
-**Best for:** Maximum parallelization, fastest feedback
-
-**Features:**
-- 12 parallel shards (one per test class)
-- Maximum parallelization (all 12 at once)
-- Fastest possible execution
-- Detailed per-test-class reporting
-
-**Shards:**
-1. login (10 tests)
-2. comprehensive-login (10 tests)
-3. registration (8 tests)
-4. password-recovery (7 tests)
-5. cart (5 tests)
-6. checkout (5 tests)
-7. product-catalog (9 tests)
-8. product-search (5 tests)
-9. homepage (5 tests)
-10. comprehensive-homepage (10 tests)
-11. error-handling (4 tests)
-12. account (4 tests)
-
-**When it runs:**
-- Push to main/develop
-- Pull requests
-- Scheduled nightly (2 AM UTC)
-
-**Execution time:** 6-8 minutes
-
 ## Common Features (All Workflows)
 
 ### ✅ Automated Failure Extraction
 
 All workflows automatically generate token-efficient failure summaries:
 - `test-failures.txt` - Condensed format (2-5 KB)
-- Artifact: `📋-test-failures-summary`
+- Artifact: `test-failures-summary`
 - 95%+ token reduction vs raw XML
 - First 20 failures shown in Actions summary
 
@@ -102,8 +71,8 @@ All workflows automatically generate token-efficient failure summaries:
 
 ## Choosing the Right Workflow
 
-### Use Free Tier if:
-- ✅ On GitHub Free account
+### Use CI Optimized if:
+- ✅ On GitHub account with limited resources
 - ✅ Want to minimize CI minutes
 - ✅ Need adaptive strategy (smart selection)
 - ✅ Cost is a primary concern
@@ -114,31 +83,24 @@ All workflows automatically generate token-efficient failure summaries:
 - ✅ Tests have interdependencies within groups
 - ✅ Medium-sized test suite (20-40 tests)
 
-### Use Ultra Sharded if:
-- ✅ Need fastest possible feedback (6-8 min)
-- ✅ Tests are fully independent
-- ✅ Large test suite (80+ tests)
-- ✅ On GitHub Pro/Team (unlimited minutes)
-
 ## CI Minutes Comparison
 
 **For 82 tests on GitHub Actions:**
 
 | Workflow | Execution Time | Parallel Jobs | CI Minutes Used |
 |----------|----------------|---------------|-----------------|
-| Free Tier (PR) | 15-20 min | 2 at a time | 60-80 minutes |
-| Free Tier (main) | 25-30 min | 3 at a time | 100-120 minutes |
+| CI Optimized (PR) | 15-20 min | 2 at a time | 60-80 minutes |
+| CI Optimized (main) | 25-30 min | 3 at a time | 100-120 minutes |
 | Standard Sharded | 10-12 min | 4 at once | 40-48 minutes |
-| Ultra Sharded | 6-8 min | 12 at once | 72-96 minutes |
 
 **GitHub Free Tier:** 2,000 CI minutes/month
-**Recommendation:** Use free tier workflow for automatic optimization
+**Recommendation:** Use CI Optimized workflow for automatic optimization
 
 ## Artifacts Generated
 
 ### Every Workflow Run Produces:
 
-1. **📋 test-failures-summary** (30 days)
+1. **test-failures-summary** (30 days)
    - Token-optimized failure list
    - Ready for AI analysis
    - 2-5 KB condensed format
@@ -148,7 +110,7 @@ All workflows automatically generate token-efficient failure summaries:
    - Allure results
    - Screenshots (if any)
 
-3. **📈 Combined Allure Report** (30 days)
+3. **Combined Allure Report** (30 days)
    - HTML interactive report
    - Merged from all shards
    - Detailed test history
@@ -166,7 +128,7 @@ Each workflow run shows in the Actions tab:
 ### Quick Start
 
 1. **Go to failed workflow run**
-2. **Download** `📋-test-failures-summary` artifact
+2. **Download** `test-failures-summary` artifact
 3. **Extract** `test-failures.txt`
 4. **Paste** into Claude Code
 
@@ -231,12 +193,12 @@ java-version: [21]  # Change to 17, 11, etc.
 
 ### Adding New Test Shards
 
-For ultra-sharded workflow, edit matrix:
+For CI optimized workflow, edit matrix:
 
 ```yaml
 matrix:
   shard:
-    - { name: "new-feature", file: "testng-shard-new-feature.xml", tests: 5 }
+    - { name: "new-feature", file: "testng-shard-new-feature.xml" }
 ```
 
 Then create the TestNG XML file:
@@ -280,15 +242,15 @@ Check:
 ### Workflow Selection Strategy
 
 **Development (PRs):**
-- Use free tier or standard sharded
+- Use CI optimized or standard sharded
 - Fast feedback more important than coverage
 
 **Main Branch:**
-- Use ultra sharded for full coverage
-- Maximum parallelization for confidence
+- Use CI optimized for full coverage with controlled parallelization
+- Balance between speed and resource usage
 
 **Nightly/Scheduled:**
-- Use ultra sharded for comprehensive testing
+- Use CI optimized for comprehensive testing
 - Time less critical, coverage is priority
 
 ### Failure Management
@@ -302,11 +264,11 @@ Check:
 
 ## Summary
 
-✅ **3 workflows** for different scenarios
+✅ **2 workflows** for different scenarios
 ✅ **Automatic failure extraction** in all workflows
 ✅ **Token-optimized reports** (95%+ reduction)
 ✅ **Flexible execution strategies** (4 or 12 shards)
-✅ **Cost-aware** (free tier support)
+✅ **Cost-aware** (resource optimized)
 ✅ **AI-ready** (MCP-compatible format)
 
-**Recommended default:** Free tier workflow (adaptive strategy)
+**Recommended default:** CI Optimized workflow (adaptive strategy)

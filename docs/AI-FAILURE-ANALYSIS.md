@@ -12,7 +12,7 @@ After each CI run, the workflow:
 1. ✅ Runs all test shards in parallel
 2. ✅ Extracts only failed/skipped tests with minimal details
 3. ✅ Creates condensed `test-failures.txt` file (2-5 KB vs 1+ MB XML)
-4. ✅ Uploads as artifact `📋-test-failures-summary`
+4. ✅ Uploads as artifact `test-failures-summary`
 5. ✅ Shows first 20 failures in GitHub Actions summary
 
 ### What's Included
@@ -47,7 +47,7 @@ TOTAL: Tests=82 Pass=79 Fail=2 Error=1 Skip=0 Rate=96.3%
 
 1. Go to your GitHub Actions run
 2. Scroll to **Artifacts** section
-3. Download `📋-test-failures-summary`
+3. Download `test-failures-summary`
 4. Extract and copy content
 
 ### Method 2: Using the Analysis Script (Recommended)
@@ -107,7 +107,7 @@ Token Estimate: ~850 tokens
 gh run list --limit 5
 
 # Download specific run's failures
-gh run download <run-id> -n "📋-test-failures-summary"
+gh run download <run-id> -n "test-failures-summary"
 
 # View content
 cat test-failures.txt
@@ -119,7 +119,7 @@ cat test-failures.txt
 
 ```bash
 # Download failures
-gh run download <run-id> -n "📋-test-failures-summary"
+gh run download <run-id> -n "test-failures-summary"
 
 # In Claude Code chat
 cat test-failures.txt
@@ -203,9 +203,8 @@ grep 'LoginTests' test-failures.txt
 
 ## Integration with Existing Workflows
 
-All three sharded workflows automatically generate failure summaries:
+Both workflows automatically generate failure summaries:
 - ✅ `selenium-tests-sharded.yml` (4 shards)
-- ✅ `selenium-tests-ultra-sharded.yml` (12 shards)
 - ✅ `selenium-tests-free-tier.yml` (4 or 12 shards)
 
 No configuration needed - just download the artifact after any run!
@@ -287,7 +286,7 @@ grep 'TimeoutException' test-failures.txt
 
 **Next Steps:**
 1. Run your CI workflow
-2. Download `📋-test-failures-summary` artifact
+2. Download `test-failures-summary` artifact
 3. Paste into Claude Code for instant analysis
 4. Apply suggested fixes
-5. Profit! 🎉
+5. Profit!

@@ -144,7 +144,7 @@ jobs:
       uses: actions/upload-artifact@v4
       if: always()
       with:
-        name: 📋-test-failures-summary
+        name: test-failures-summary
         path: test-failures.txt
         retention-days: 30
 
@@ -201,7 +201,7 @@ jobs:
             echo '```' >> $GITHUB_STEP_SUMMARY
             grep '^\[.*\].*:' test-failures.txt | head -20 >> $GITHUB_STEP_SUMMARY
             if [ "$failure_count" -gt 20 ]; then
-              echo "... and $((failure_count - 20)) more (see artifact 📋-test-failures-summary)" >> $GITHUB_STEP_SUMMARY
+              echo "... and $((failure_count - 20)) more (see artifact test-failures-summary)" >> $GITHUB_STEP_SUMMARY
             fi
             echo '```' >> $GITHUB_STEP_SUMMARY
           fi
@@ -209,7 +209,7 @@ jobs:
 
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "---" >> $GITHUB_STEP_SUMMARY
-        echo "**📋 Download:** test-failures-summary artifact for AI-optimized failure analysis" >> $GITHUB_STEP_SUMMARY
+        echo "**Download:** test-failures-summary artifact for AI-optimized failure analysis" >> $GITHUB_STEP_SUMMARY
 
   security-scan:
     runs-on: ubuntu-latest

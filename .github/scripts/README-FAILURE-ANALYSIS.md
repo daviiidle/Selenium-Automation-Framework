@@ -14,7 +14,7 @@ This directory contains scripts to extract test failures in a token-efficient fo
 
 1. After all shards complete, the `merge-and-report` job downloads all test results
 2. `extract-failures.sh` processes all XML files and creates `test-failures.txt`
-3. The condensed summary is uploaded as artifact `📋-test-failures-summary`
+3. The condensed summary is uploaded as artifact `test-failures-summary`
 4. First 20 failures are shown in GitHub Actions summary
 5. Full report available for download
 
@@ -47,7 +47,7 @@ TOTAL: Tests=82 Pass=79 Fail=2 Error=1 Skip=0 Rate=96.3%
 
 1. Go to your workflow run in GitHub Actions
 2. Scroll to "Artifacts" section
-3. Download `📋-test-failures-summary` artifact
+3. Download `test-failures-summary` artifact
 4. Extract `test-failures.txt`
 
 ### Token Efficiency
@@ -130,7 +130,7 @@ The condensed format works seamlessly with MCP debugging tools:
 
 ```bash
 # Download failure summary
-gh run download <run-id> -n 📋-test-failures-summary
+gh run download <run-id> -n test-failures-summary
 
 # Feed to Selenium Debug MCP
 mcp__selenium-debug__diagnose-error \
