@@ -15,7 +15,8 @@
       "Bash(git commit -m \"$(cat <<''EOF''\nFix artifact upload failure by removing colons from TestNG suite names\n\nChanged all shard suite names from \"Shard: X Tests\" to \"Shard - X Tests\"\nto resolve Windows file system incompatibility with colon character in\nartifact paths. This was causing GitHub Actions artifact upload failures\nacross all 12 test shards.\n\nModified files:\n- All 12 testng-shard-*.xml files in src/test/resources/config/shards/\n\nGenerated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
       "mcp__claude-codex-mcp__git_status",
       "Bash(for file in src/test/resources/config/shards/testng-shard-*.xml)",
-      "Bash(do)"
+      "Bash(do)",
+      "mcp__claude-codex-mcp__git_log"
     ],
     "deny": [],
     "ask": []

@@ -21,12 +21,39 @@ public abstract class BaseTest {
     protected ConfigurationManager config;
     private static final ThreadLocal<WebDriver> DRIVER = new ThreadLocal<>();
     private static final ThreadLocal<HomePage> HOME_PAGE = new ThreadLocal<>();
+    private static final ThreadLocal<Boolean> SETUP_COMPLETED = new ThreadLocal<>();
 
     @BeforeMethod(timeOut = 600000) // 10 minute timeout to match page load timeout
     public void setUp(Method method) {
         logger.info("Starting test: {}.{}", this.getClass().getSimpleName(), method.getName());
 
         try {
+            // Check if setup already completed for this thread (handles data-driven test iterations)
+            if (Boolean.TRUE.equals(SETUP_COMPLETED.get()) && DRIVER.get() != null) {
+                logger.debug("WebDriver already initialized for this thread, reusing for data-driven test iteration");
+                
+                // Verify driver is still valid
+                if (isDriverValid()) {
+                    // Navigate back to home page for data-driven test iteration
+                    try {
+                        HomePage homePage = HOME_PAGE.get();
+                        if (homePage != null) {
+                            homePage.navigateToHomePage();
+                            logger.info("Navigated to homepage for new test iteration");
+                        }
+                    } catch (Exception navEx) {
+                        logger.warn("Could not navigate to home page for iteration, will continue: {}", navEx.getMessage());
+                    }
+                    
+                    // Call additional setup hook for test classes
+                    additionalSetup();
+                    return;
+                } else {
+                    logger.warn("Driver was initialized but is no longer valid, recreating");
+                    tearDownThreadState();
+                }
+            }
+
             tearDownThreadState(); // ensure no stale state on reused threads
 
             config = ConfigurationManager.getInstance();
@@ -164,6 +191,9 @@ public abstract class BaseTest {
                 }
             }
 
+            // Mark setup as completed for this thread
+            SETUP_COMPLETED.set(true);
+
             // Call additional setup hook for test classes
             additionalSetup();
 
@@ -182,7 +212,7 @@ public abstract class BaseTest {
 
     @AfterMethod
     public void tearDown(Method method) {
-        logger.info("Cleaning up test: {}.{}", this.getClass().getSimpleName(), method.getName());
+        logger.info("Cleaning up test: {}.{}\n", this.getClass().getSimpleName(), method.getName());
 
         try {
             // Call additional teardown hook for test classes
@@ -357,8 +387,15 @@ public abstract class BaseTest {
     protected HomePage getHomePage() {
         HomePage page = HOME_PAGE.get();
         if (page == null) {
-            page = new HomePage(getDriver());
-            HOME_PAGE.set(page);
+            // Lazy initialization if HomePage is null but Driver exists
+            WebDriver driver = DRIVER.get();
+            if (driver != null) {
+                logger.debug("HomePage was null, creating new instance from existing driver");
+                page = new HomePage(driver);
+                HOME_PAGE.set(page);
+            } else {
+                throw new IllegalStateException("Cannot create HomePage - WebDriver not initialized for current thread");
+            }
         }
         return page;
     }
@@ -385,6 +422,7 @@ public abstract class BaseTest {
     private void tearDownThreadState() {
         DRIVER.remove();
         HOME_PAGE.remove();
+        SETUP_COMPLETED.remove();
     }
 
 }
