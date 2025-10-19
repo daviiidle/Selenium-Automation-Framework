@@ -185,7 +185,8 @@ public class WebDriverFactory {
     }
 
     /**
-     * Gets Chrome options optimized for CI renderer stability with enhanced timeout protection
+     * Gets Chrome options optimized for CI renderer stability
+     * CRITICAL FIX: Removed --single-process flag that was causing renderer timeouts
      * @return ChromeOptions
      */
     private static ChromeOptions getChromeOptions(boolean useNewHeadless) {
@@ -203,25 +204,11 @@ public class WebDriverFactory {
         options.addArguments("--disable-gpu");
         options.addArguments("--disable-software-rasterizer");
         
-        // ENHANCED: Prevent renderer timeout issues with aggressive flags
-        options.addArguments("--disable-browser-side-navigation");
-        options.addArguments("--enable-features=NetworkService,NetworkServiceInProcess");
-        options.addArguments("--disable-features=VizDisplayCompositor");
-        options.addArguments("--force-device-scale-factor=1");
-        options.addArguments("--disable-blink-features=AutomationControlled");
-        
-        // NEW: Additional renderer stability flags
-        options.addArguments("--disable-ipc-flooding-protection");
+        // Renderer stability - allow separate processes for stability
         options.addArguments("--disable-renderer-backgrounding");
         options.addArguments("--disable-backgrounding-occluded-windows");
         options.addArguments("--disable-background-timer-throttling");
-        options.addArguments("--disable-renderer-accessibility");
-        options.addArguments("--disable-web-security");
-        options.addArguments("--allow-running-insecure-content");
-        
-        // Single process mode for CI reliability (avoids IPC issues)
-        options.addArguments("--single-process");
-        options.addArguments("--no-zygote");
+        options.addArguments("--disable-blink-features=AutomationControlled");
         
         // Window settings
         options.addArguments("--window-size=1920,1080");
@@ -237,20 +224,13 @@ public class WebDriverFactory {
         options.addArguments("--disable-breakpad");
         options.addArguments("--disable-component-update");
         options.addArguments("--disable-domain-reliability");
-        options.addArguments("--disable-features=IsolateOrigins,site-per-process");
-        
-        // NEW: Network and resource loading optimizations
-        options.addArguments("--dns-prefetch-disable");
-        options.addArguments("--disable-preconnect");
-        options.addArguments("--disk-cache-size=0");
-        options.addArguments("--media-cache-size=0");
         
         // Logging controls
         options.addArguments("--log-level=3");
         options.addArguments("--silent");
         options.addArguments("--disable-logging");
         
-        // Memory and resource settings (moderate for CI)
+        // Memory and resource settings
         options.addArguments("--disable-hang-monitor");
         options.addArguments("--metrics-recording-only");
         options.addArguments("--no-first-run");
@@ -259,7 +239,7 @@ public class WebDriverFactory {
         options.setExperimentalOption("useAutomationExtension", false);
         options.setExperimentalOption("excludeSwitches", new String[]{"enable-automation", "enable-logging"});
         
-        // NEW: Preferences for renderer stability
+        // Preferences for renderer stability
         java.util.Map<String, Object> prefs = new java.util.HashMap<>();
         prefs.put("profile.default_content_setting_values.notifications", 2);
         prefs.put("profile.default_content_settings.popups", 0);
@@ -272,7 +252,7 @@ public class WebDriverFactory {
         // CRITICAL: Page load strategy for reliability - NORMAL ensures full page load
         options.setPageLoadStrategy(org.openqa.selenium.PageLoadStrategy.NORMAL);
 
-        logger.debug("Created CI-hardened Chrome options with enhanced renderer stability flags");
+        logger.debug("Created CI-hardened Chrome options without --single-process for renderer stability");
         return options;
     }
     
