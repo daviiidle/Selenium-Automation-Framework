@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
 <suite name="DemoWebShop Shard 1 - Authentication Tests"
-       parallel="methods"
+       parallel="classes"
        thread-count="4"
        verbose="1"
        data-provider-thread-count="2"
@@ -13,7 +13,7 @@
 
     <test name="Authentication Tests Shard"
           preserve-order="false"
-          parallel="methods"
+          parallel="classes"
           thread-count="4">
         <packages>
             <package name="tests.authentication"/>

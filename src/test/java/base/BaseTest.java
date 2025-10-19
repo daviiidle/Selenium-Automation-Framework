@@ -23,7 +23,7 @@ public abstract class BaseTest {
     private static final ThreadLocal<HomePage> HOME_PAGE = new ThreadLocal<>();
     private static final ThreadLocal<Boolean> SETUP_COMPLETED = new ThreadLocal<>();
 
-    @BeforeMethod(timeOut = 600000) // 10 minute timeout to match page load timeout
+    @BeforeMethod(alwaysRun = true, timeOut = 600000) // 10 minute timeout to match page load timeout
     public void setUp(Method method) {
         logger.info("Starting test: {}.{}", this.getClass().getSimpleName(), method.getName());
 
@@ -210,7 +210,7 @@ public abstract class BaseTest {
         }
     }
 
-    @AfterMethod
+    @AfterMethod(alwaysRun = true)
     public void tearDown(Method method) {
         logger.info("Cleaning up test: {}.{}\n", this.getClass().getSimpleName(), method.getName());
 

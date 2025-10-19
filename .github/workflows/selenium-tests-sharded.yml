@@ -49,12 +49,13 @@ jobs:
       run: mvn dependency:resolve
 
     - name: Run shard ${{ matrix.shard }} tests
+      id: test-execution
+      continue-on-error: true
       run: |
         mvn clean test -Pci \
           -DsuiteXmlFile=src/test/resources/config/testng-shard-${{ matrix.shard }}.xml \
           -Dbrowser=${{ matrix.browser }} \
-          -Dheadless=true \
-          -Dmaven.test.failure.ignore=true
+          -Dheadless=true
       env:
         MAVEN_OPTS: "-Xmx3g -Xms1g"
         BROWSER: ${{ matrix.browser }}
@@ -91,7 +92,11 @@ jobs:
         name: Test Results - Shard ${{ matrix.shard }} - ${{ matrix.browser }} - Java ${{ matrix.java-version }}
         path: target/surefire-reports/TEST-*.xml
         reporter: java-junit
-        fail-on-error: false
+        fail-on-error: true
+
+    - name: Fail job if tests failed
+      if: steps.test-execution.outcome == 'failure'
+      run: exit 1
 
   merge-reports:
     needs: test-sharded
