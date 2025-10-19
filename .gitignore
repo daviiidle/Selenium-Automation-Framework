@@ -200,3 +200,10 @@ selenium-server-*.log
 # Custom configuration files (if sensitive)
 config/local.properties
 config/secrets.properties
+
+# MCP Servers (development tools, not part of test framework)
+framework-navigator-mcp/
+mvn-test-runner-mcp/
+selenium-debug-mcp/
+manual-testing-documentation/
+.mcp-backups/
