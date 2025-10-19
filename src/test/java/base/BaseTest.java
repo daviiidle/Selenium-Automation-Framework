@@ -101,6 +101,12 @@ public abstract class BaseTest {
             
             DRIVER.set(driver);
 
+            // CRITICAL: Verify driver was actually set in ThreadLocal
+            if (DRIVER.get() == null) {
+                throw new RuntimeException("CRITICAL: WebDriver failed to set in ThreadLocal despite successful creation");
+            }
+            logger.info("WebDriver successfully stored in ThreadLocal for thread: {}", Thread.currentThread().getName());
+
             // Ensure Selenide WebDriver is bound for this thread
             com.codeborne.selenide.WebDriverRunner.setWebDriver(driver);
 
@@ -190,6 +196,15 @@ public abstract class BaseTest {
                     }
                 }
             }
+
+            // CRITICAL: Final validation before marking setup as complete
+            if (DRIVER.get() == null) {
+                throw new RuntimeException("CRITICAL: Setup completed but WebDriver is null in ThreadLocal");
+            }
+            if (HOME_PAGE.get() == null) {
+                throw new RuntimeException("CRITICAL: Setup completed but HomePage is null in ThreadLocal");
+            }
+            logger.info("Final validation passed - Driver and HomePage are properly initialized");
 
             // Mark setup as completed for this thread
             SETUP_COMPLETED.set(true);
