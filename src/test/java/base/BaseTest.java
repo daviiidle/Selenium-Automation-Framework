@@ -25,7 +25,10 @@ public abstract class BaseTest {
 
     @BeforeMethod(alwaysRun = true, timeOut = 600000) // 10 minute timeout to match page load timeout
     public void setUp(Method method) {
-        logger.info("Starting test: {}.{}", this.getClass().getSimpleName(), method.getName());
+        logger.info("=== SETUP STARTED === Thread: {}, Test: {}.{}", 
+                    Thread.currentThread().getName(), 
+                    this.getClass().getSimpleName(), 
+                    method.getName());
 
         try {
             // Check if setup already completed for this thread (handles data-driven test iterations)
@@ -47,6 +50,7 @@ public abstract class BaseTest {
                     
                     // Call additional setup hook for test classes
                     additionalSetup();
+                    logger.info("=== SETUP COMPLETED (REUSED) === Thread: {}", Thread.currentThread().getName());
                     return;
                 } else {
                     logger.warn("Driver was initialized but is no longer valid, recreating");
@@ -99,20 +103,31 @@ public abstract class BaseTest {
                 }
             }
             
+            // CRITICAL: Set driver in ThreadLocal IMMEDIATELY
             DRIVER.set(driver);
+            logger.info("✓ WebDriver stored in ThreadLocal for thread: {}", Thread.currentThread().getName());
 
             // CRITICAL: Verify driver was actually set in ThreadLocal
-            if (DRIVER.get() == null) {
+            WebDriver verifyDriver = DRIVER.get();
+            if (verifyDriver == null) {
                 throw new RuntimeException("CRITICAL: WebDriver failed to set in ThreadLocal despite successful creation");
             }
-            logger.info("WebDriver successfully stored in ThreadLocal for thread: {}", Thread.currentThread().getName());
+            logger.info("✓ WebDriver ThreadLocal verification passed");
 
             // Ensure Selenide WebDriver is bound for this thread
             com.codeborne.selenide.WebDriverRunner.setWebDriver(driver);
+            logger.info("✓ Selenide WebDriver bound");
 
+            // CRITICAL: Create HomePage IMMEDIATELY after driver is set
             HomePage homePage = new HomePage(driver);
             HOME_PAGE.set(homePage);
-            logger.info("HomePage object created");
+            logger.info("✓ HomePage object created and stored");
+
+            // Verify HomePage was set
+            if (HOME_PAGE.get() == null) {
+                throw new RuntimeException("CRITICAL: HomePage failed to set in ThreadLocal");
+            }
+            logger.info("✓ HomePage ThreadLocal verification passed");
 
             // Navigate with enhanced retry logic for renderer timeouts
             boolean navigationSuccess = false;
@@ -145,11 +160,11 @@ public abstract class BaseTest {
                     if (!homePage.isPageLoaded()) {
                         logger.warn("Homepage may not be fully loaded after {}s, but continuing", maxWait);
                     } else {
-                        logger.info("Homepage fully loaded and verified");
+                        logger.info("✓ Homepage fully loaded and verified");
                     }
                     
                     navigationSuccess = true;
-                    logger.info("Navigated to homepage successfully on attempt {}", navAttempts);
+                    logger.info("✓ Navigated to homepage successfully on attempt {}", navAttempts);
                     
                 } catch (org.openqa.selenium.TimeoutException timeoutEx) {
                     lastNavException = timeoutEx;
@@ -204,7 +219,7 @@ public abstract class BaseTest {
             if (HOME_PAGE.get() == null) {
                 throw new RuntimeException("CRITICAL: Setup completed but HomePage is null in ThreadLocal");
             }
-            logger.info("Final validation passed - Driver and HomePage are properly initialized");
+            logger.info("✓ Final validation passed - Driver and HomePage are properly initialized");
 
             // Mark setup as completed for this thread
             SETUP_COMPLETED.set(true);
@@ -212,10 +227,15 @@ public abstract class BaseTest {
             // Call additional setup hook for test classes
             additionalSetup();
 
-            logger.info("Test setup completed for: {}", method.getName());
+            logger.info("=== SETUP COMPLETED === Thread: {}, Test: {}", 
+                       Thread.currentThread().getName(), 
+                       method.getName());
 
         } catch (Exception e) {
-            logger.error("Test setup failed for: {} - {}", method.getName(), e.getMessage());
+            logger.error("=== SETUP FAILED === Thread: {}, Test: {} - Error: {}", 
+                        Thread.currentThread().getName(),
+                        method.getName(), 
+                        e.getMessage(), e);
 
             // Clean up driver on failure
             safeQuitDriver();
@@ -394,7 +414,14 @@ public abstract class BaseTest {
     protected WebDriver getDriver() {
         WebDriver driver = DRIVER.get();
         if (driver == null) {
-            throw new IllegalStateException("WebDriver not initialized for current thread");
+            String errorMsg = String.format(
+                "WebDriver not initialized for current thread: %s. " +
+                "This usually means @BeforeMethod setUp() didn't run successfully. " +
+                "Check test execution logs for setup errors.",
+                Thread.currentThread().getName()
+            );
+            logger.error(errorMsg);
+            throw new IllegalStateException(errorMsg);
         }
         return driver;
     }
@@ -402,14 +429,26 @@ public abstract class BaseTest {
     protected HomePage getHomePage() {
         HomePage page = HOME_PAGE.get();
         if (page == null) {
-            // Lazy initialization if HomePage is null but Driver exists
+            // Enhanced diagnostic logging
             WebDriver driver = DRIVER.get();
+            logger.error("HomePage is null in ThreadLocal. Thread: {}, Driver exists: {}", 
+                        Thread.currentThread().getName(), 
+                        driver != null);
+            
             if (driver != null) {
-                logger.debug("HomePage was null, creating new instance from existing driver");
+                logger.info("Driver exists but HomePage is null - creating new HomePage instance");
                 page = new HomePage(driver);
                 HOME_PAGE.set(page);
+                logger.info("Created and stored new HomePage instance");
             } else {
-                throw new IllegalStateException("Cannot create HomePage - WebDriver not initialized for current thread");
+                String errorMsg = String.format(
+                    "Cannot create HomePage - WebDriver not initialized for current thread: %s. " +
+                    "This indicates @BeforeMethod setUp() did not run or failed. " +
+                    "Verify TestNG configuration and check for setup exceptions in logs.",
+                    Thread.currentThread().getName()
+                );
+                logger.error(errorMsg);
+                throw new IllegalStateException(errorMsg);
             }
         }
         return page;
