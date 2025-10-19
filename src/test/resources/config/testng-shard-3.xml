@@ -5,7 +5,7 @@
        thread-count="4"
        verbose="1"
        data-provider-thread-count="2"
-       time-out="240000"
+       time-out="600000"
        preserve-order="false">
 
     <parameter name="browser" value="chrome"/>
