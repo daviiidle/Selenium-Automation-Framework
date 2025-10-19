@@ -186,7 +186,7 @@ public class WebDriverFactory {
 
     /**
      * Gets Chrome options optimized for CI renderer stability
-     * CRITICAL FIX: Removed --single-process flag that was causing renderer timeouts
+     * CRITICAL FIX: Added renderer communication and DevTools protocol fixes
      * @return ChromeOptions
      */
     private static ChromeOptions getChromeOptions(boolean useNewHeadless) {
@@ -203,6 +203,12 @@ public class WebDriverFactory {
         options.addArguments("--disable-dev-shm-usage");
         options.addArguments("--disable-gpu");
         options.addArguments("--disable-software-rasterizer");
+        
+        // CRITICAL FIX: Enable DevTools protocol and renderer communication
+        options.addArguments("--remote-debugging-port=9222");
+        options.addArguments("--disable-web-security");
+        options.addArguments("--disable-site-isolation-trials");
+        options.addArguments("--disable-features=IsolateOrigins,site-per-process");
         
         // Renderer stability - allow separate processes for stability
         options.addArguments("--disable-renderer-backgrounding");
@@ -252,7 +258,7 @@ public class WebDriverFactory {
         // CRITICAL: Page load strategy for reliability - NORMAL ensures full page load
         options.setPageLoadStrategy(org.openqa.selenium.PageLoadStrategy.NORMAL);
 
-        logger.debug("Created CI-hardened Chrome options without --single-process for renderer stability");
+        logger.debug("Created CI-hardened Chrome options with renderer communication fixes");
         return options;
     }
     
